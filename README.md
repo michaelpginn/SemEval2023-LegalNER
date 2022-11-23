@@ -11,7 +11,7 @@ The goal of this project is to perform Named Entity Recognition (NER) on Indian 
 
 Train with `python -m spacy train config.cfg --output ./output --gpu-id 0`.
 
-| Experimental Conditions | Trained Machine # | F1 | Prec | Acc |
+| Experimental Conditions | Trained on Machine # | F1 | Prec | Acc |
 | --- | --- | --- | --- | --- |
 | Baseline (https://github.com/Legal-NLP-EkStep/legal_NER) | 1 | | |
 | LegalBERT as embeddings | | | |
