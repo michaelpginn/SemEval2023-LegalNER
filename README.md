@@ -7,11 +7,17 @@ This repo is associated with the subtask "Sub-task B: Legal Named Entities Extra
 ## Task
 The goal of this project is to perform Named Entity Recognition (NER) on Indian legal texts. General-purpose NER systems tend to perform poorly on legal texts, so a specialized system is desirable.
 
-## Experiments
-### 1. Minimal Baseline Model
-The first model will use a simple Transformer-based model that uses word-level embeddings and a RoBERTa Transformer, much like the baseline presented in https://github.com/Legal-NLP-EkStep/legal_NER. 
+## Experimental Results
 
-### 2. LegalBERT Model
-This model will replace the general-purpose RoBERTa with the specialized LegalBERT transformer.
+Train with `python -m spacy train config.cfg --output ./output --gpu-id 0`.
+
+| Experimental Conditions | Trained on | F1 | Prec | Acc |
+| --- | --- | --- | --- | --- |
+| Baseline (https://github.com/Legal-NLP-EkStep/legal_NER) | 1 | | |
+| LegalBERT as embeddings | | | |
+
+
+### Machines
+1. Google Cloud Compute VM, n1-standard-4, 1 x NVIDIA T4, Debian
 
 ### To be continued...
