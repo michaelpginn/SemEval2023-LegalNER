@@ -4,6 +4,9 @@ https://sites.google.com/view/legaleval/home
 
 This repo is associated with the subtask "Sub-task B: Legal Named Entities Extraction (L-NER)" of SemEval 2023, Task 6.
 
+### Trained Models
+https://drive.google.com/drive/folders/1YmcGInc6R4_qUGzbPtHVuQ8eQut6GOGn?usp=sharing
+
 ## Task
 The goal of this project is to perform Named Entity Recognition (NER) on Indian legal texts. General-purpose NER systems tend to perform poorly on legal texts, so a specialized system is desirable.
 
