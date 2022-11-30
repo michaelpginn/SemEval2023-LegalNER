@@ -3,11 +3,13 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 from typing import List
 import random 
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Using device: {device}")
 
+print("Loading training data")
 # Load training data
 preamble = pd.read_json("NER_TRAIN/NER_TRAIN_PREAMBLE.json")
 preamble_texts = [item['text'] for item in preamble['data']]
@@ -56,6 +58,7 @@ def encode_labels(labels: List[int]) -> torch.FloatTensor:
 train_label_batches = [encode_labels(b) for b in chunk(all_labels, batch_size)]
 
 # Process dev data as well
+print("Processing dev data")
 preamble_texts_dev = [item['text'] for item in pd.read_json("NER_DEV/NER_DEV_PREAMBLE.json")['data']]
 judgement_texts_dev = [item['text'] for item in pd.read_json("NER_DEV/NER_DEV_JUDGEMENT.json")['data']]
 all_texts_dev = preamble_texts_dev + judgement_texts_dev
@@ -87,7 +90,7 @@ class SentenceBinaryClassifier(torch.nn.Module):
         return torch.sigmoid(out)
     
 def predict(model, sents):
-    return model(sents) > 0.5
+    return (model(sents) > 0.5).float()
 
 
 def training_loop(num_epochs, train_sentences, train_labels, dev_sentences, dev_labels, optimizer, model):
@@ -95,6 +98,9 @@ def training_loop(num_epochs, train_sentences, train_labels, dev_sentences, dev_
     loss_func = torch.nn.BCELoss()
     batches = list(zip(train_sentences, train_labels))
     random.shuffle(batches)
+    dev_batches = list(zip(dev_sentences, dev_labels))
+    random.shuffle(dev_batches)
+    
     for i in range(num_epochs):
         losses = []
         for sents, labels in tqdm(batches):
@@ -108,12 +114,12 @@ def training_loop(num_epochs, train_sentences, train_labels, dev_sentences, dev_
         print("Evaluating dev")
         dev_preds = []
         dev_labels = []
-        for sents, labels in tqdm(zip(dev_sents, dev_labels), total=len(dev_sents)):
+        for sents, labels in tqdm(dev_batches):
             pred = predict(model, sents)
             dev_preds.extend(pred)
             dev_labels.extend(list(labels.numpy()))
-        accuracy = sum(dev_preds == dev_labels) / len(dev_labels)
-        print(f"Dev Acc: {accuracy}")
+        f1 = f1_score(dev_labels, dev_preds, average='macro')
+        print(f"Dev f1: {f1}")
     return model
 
 

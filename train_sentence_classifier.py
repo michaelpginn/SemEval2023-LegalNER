@@ -90,7 +90,7 @@ class SentenceBinaryClassifier(torch.nn.Module):
         return torch.sigmoid(out)
     
 def predict(model, sents):
-    return model(sents) > 0.5
+    return (model(sents) > 0.5).float()
 
 
 def training_loop(num_epochs, train_sentences, train_labels, dev_sentences, dev_labels, optimizer, model):
@@ -98,6 +98,9 @@ def training_loop(num_epochs, train_sentences, train_labels, dev_sentences, dev_
     loss_func = torch.nn.BCELoss()
     batches = list(zip(train_sentences, train_labels))
     random.shuffle(batches)
+    dev_batches = list(zip(dev_sentences, dev_labels))
+    random.shuffle(dev_batches)
+    
     for i in range(num_epochs):
         losses = []
         for sents, labels in tqdm(batches):
@@ -111,12 +114,12 @@ def training_loop(num_epochs, train_sentences, train_labels, dev_sentences, dev_
         print("Evaluating dev")
         dev_preds = []
         dev_labels = []
-        for sents, labels in tqdm(zip(dev_sentences, dev_labels), total=len(dev_sentences)):
+        for sents, labels in tqdm(dev_batches):
             pred = predict(model, sents)
             dev_preds.extend(pred)
             dev_labels.extend(list(labels.numpy()))
-        accuracy = sum(dev_preds == dev_labels) / len(dev_labels)
-        print(f"Dev Acc: {accuracy}")
+        f1 = f1_score(dev_labels, dev_preds, average='macro')
+        print(f"Dev f1: {f1}")
     return model
 
 
