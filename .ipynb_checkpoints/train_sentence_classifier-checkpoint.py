@@ -117,7 +117,7 @@ def training_loop(num_epochs, train_sentences, train_labels, dev_sentences, dev_
         for sents, labels in tqdm(dev_batches):
             pred = predict(model, sents)
             dev_preds.extend(pred)
-            dev_labels.extend(list(labels.numpy()))
+            dev_labels.extend(list(labels.cpu().numpy()))
         f1 = f1_score(dev_labels, dev_preds, average='macro')
         print(f"Dev f1: {f1}")
     return model
