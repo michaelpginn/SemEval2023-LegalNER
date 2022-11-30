@@ -4,6 +4,7 @@ from transformers import AutoTokenizer, AutoModel
 from typing import List
 import random 
 from tqdm import tqdm
+from sklearn.metrics import f1_score
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
