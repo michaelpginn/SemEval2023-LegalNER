@@ -111,7 +111,7 @@ def training_loop(num_epochs, train_sentences, train_labels, dev_sentences, dev_
         print("Evaluating dev")
         dev_preds = []
         dev_labels = []
-        for sents, labels in tqdm(zip(dev_sentences, dev_labels), total=len(dev_sents)):
+        for sents, labels in tqdm(zip(dev_sentences, dev_labels), total=len(dev_sentences)):
             pred = predict(model, sents)
             dev_preds.extend(pred)
             dev_labels.extend(list(labels.numpy()))
