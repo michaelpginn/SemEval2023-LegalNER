@@ -116,7 +116,7 @@ def training_loop(num_epochs, train_sentences, train_labels, dev_sentences, dev_
         dev_preds = []
         dev_labels = []
         for sents, labels in tqdm(dev_batches):
-            pred = predict(model, sents)
+            pred = predict(model, sents).squeeze(1)
             dev_preds.extend(pred.cpu())
             dev_labels.extend(list(labels.cpu().numpy()))
         f1 = f1_score(dev_labels, dev_preds, average='macro')
