@@ -15,18 +15,22 @@ The goal of this project is to perform Named Entity Recognition (NER) on Indian 
 1. **Baseline system [[2]](#2)** - (https://github.com/Legal-NLP-EkStep/legal_NER) Uses RoBERTa as the embeddings and spaCy Transition-based NER parser.
 2. **LegalBERT** - Replace the RoBERTa with [LegalBERT](#1).
 3. **Higher Dropout** - The baseline dropout is very low. Try increasing it to a standard value, such as 0.3.
-4. **Combined System** - As in [Jiang et al](#3), leverage the output of the spaCy and Stanford NER models.
+4. **Larger Hidden State** - Increase the hidden state of the NER model to 128.
+5. **Provide Document Type** - Some of the tags depend on whether the sentence is from the preamble or judgement text. We will use a model trained to classify sentences to provide this information as a downstream feature.
+6. **Combined System** - As in [Jiang et al](#3), leverage the output of the spaCy and Stanford NER models.
 
 ## Experimental Results
 
 Train with `python -m spacy train config.cfg --output ./output --gpu-id 0`.
 
-| Experimental Conditions | Trained on Machine # | F1 | Prec | Acc |
+| Experimental Conditions | Trained on Machine # | F1 | Prec | Rec |
 | --- | --- | --- | --- | --- |
-| 1. Baseline | 1 | | |
-| 2. LegalBERT as embeddings | | | |
-| 3. Higher Dropout (0.3) | | | |
-| 3. Combined System | | | |
+| 1. Baseline | 1 | 0.903 | 0.903 | 0.904 |
+| 2. LegalBERT as embeddings | 1 | 0.893 | 0.892 | 0.894 |
+| 3. Higher Dropout (0.3) | 1 | 0.901 | 0.901 | 0.901 |
+| 4. Larger Hidden State | 1 | 0.890 | 0.891 | 0.889 |
+| 5. Provide Document Type |  | | |
+| 6. Combined System |  | | |
 
 
 ### Machines
