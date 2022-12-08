@@ -98,7 +98,7 @@ def main():
                                               tokenizer=tokenizer,
                                               batch_size=64,
                                               epochs=100)
-    trainer.evaluate()
+    print(trainer.evaluate())
 
 if __name__ == "__main__":
     main()
