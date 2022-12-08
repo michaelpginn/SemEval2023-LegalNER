@@ -94,7 +94,8 @@ def main():
     model, trainer = create_model_and_trainer(train=train,
                                               dev=dev,
                                               labels=labels,
-                                              tokenizer=tokenizer,)
+                                              tokenizer=tokenizer,
+                                              batch_size=128)
     trainer.train()
     trainer.save_model('./output')
 
