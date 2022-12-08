@@ -1,0 +1,7 @@
+datasets==2.7.1
+torch==1.13.0
+torchaudio==0.13.0
+torchdata==0.5.0
+torchtext==0.14.0
+torchvision==0.14.0
+transformers==4.21.3
