@@ -33,7 +33,7 @@ def process_dataset(dataset, tokenizer, labels):
 
 def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epochs, pretrained='nlpaueb/legal-bert-base-uncased'):
     print("Creating model...")
-    model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(labels))
+    model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
     args = TrainingArguments(
         f"checkpoints",
         evaluation_strategy = "epoch",
