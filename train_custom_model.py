@@ -31,7 +31,7 @@ def process_dataset(dataset, tokenizer, labels):
     return dataset.map(tokenize)
 
 
-def create_model_and_trainer(train, dev, labels, tokenizer, pretrained='nlpaueb/legal-bert-base-uncased', batch_size=16):
+def create_model_and_trainer(train, dev, all_labels, tokenizer, pretrained='nlpaueb/legal-bert-base-uncased', batch_size, epochs):
     print("Creating model...")
     model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(labels))
     args = TrainingArguments(
@@ -41,7 +41,7 @@ def create_model_and_trainer(train, dev, labels, tokenizer, pretrained='nlpaueb/
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
         gradient_accumulation_steps=3,
-        num_train_epochs=20,
+        num_train_epochs=epochs,
         weight_decay=0.01,
         save_strategy="epoch",
         save_total_limit=3,
@@ -56,11 +56,11 @@ def create_model_and_trainer(train, dev, labels, tokenizer, pretrained='nlpaueb/
 
         # Remove ignored index (special tokens)
         true_predictions = [
-            [label_list[p] for (p, l) in zip(prediction, label) if l != -100]
+            [all_labels[p] for (p, l) in zip(prediction, label) if l != -100]
             for prediction, label in zip(predictions, labels)
         ]
         true_labels = [
-            [label_list[l] for (p, l) in zip(prediction, label) if l != -100]
+            [all_labels[l] for (p, l) in zip(prediction, label) if l != -100]
             for prediction, label in zip(predictions, labels)
         ]
 
@@ -93,9 +93,10 @@ def main():
     dev = process_dataset(dev, tokenizer, labels)
     model, trainer = create_model_and_trainer(train=train,
                                               dev=dev,
-                                              labels=labels,
+                                              all_labels=labels,
                                               tokenizer=tokenizer,
-                                              batch_size=128)
+                                              batch_size=64,
+                                              epochs=100)
     trainer.train()
     trainer.save_model('./output')
 
