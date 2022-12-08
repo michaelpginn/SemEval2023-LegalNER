@@ -87,7 +87,7 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
 
 def main():
     train, labels = load_data()
-    dev, _ = load_data('training/data/train.spacy')
+    dev, _ = load_data('training/data/dev.spacy')
     tokenizer = AutoTokenizer.from_pretrained('nlpaueb/legal-bert-base-uncased')
     train = process_dataset(train, tokenizer, labels)
     dev = process_dataset(dev, tokenizer, labels)
