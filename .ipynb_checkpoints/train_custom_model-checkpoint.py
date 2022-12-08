@@ -31,7 +31,7 @@ def process_dataset(dataset, tokenizer, labels):
     return dataset.map(tokenize)
 
 
-def create_model_and_trainer(train, dev, all_labels, tokenizer, pretrained='nlpaueb/legal-bert-base-uncased', batch_size, epochs):
+def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epochs, pretrained='nlpaueb/legal-bert-base-uncased'):
     print("Creating model...")
     model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(labels))
     args = TrainingArguments(
