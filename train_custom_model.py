@@ -6,6 +6,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification, Trainin
 import numpy as np
 
 def load_data(spacy_file='training/data/train.spacy'):
+    print("Loading data...")
     doc_bin = DocBin().from_disk(spacy_file)
     nlp = spacy.load('en_core_web_trf')
     docs = doc_bin.get_docs(nlp.vocab)
@@ -21,6 +22,7 @@ def load_data(spacy_file='training/data/train.spacy'):
 
 
 def process_dataset(dataset, tokenizer):
+    print("Processing dataset...")
     def tokenize(row):
         tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
         aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
@@ -30,6 +32,7 @@ def process_dataset(dataset, tokenizer):
 
 
 def create_model_and_trainer(train, dev, labels, tokenizer, pretrained='nlpaueb/legal-bert-base-uncased', batch_size=16):
+    print("Creating model...")
     model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(labels))
     args = TrainingArguments(
         f"checkpoints",
