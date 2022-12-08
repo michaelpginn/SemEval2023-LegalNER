@@ -28,7 +28,7 @@ def process_dataset(dataset, tokenizer):
         aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
         tokenized['labels'] = aligned_labels
         return tokenized
-    return dataset.map(tokenizer)
+    return dataset.map(tokenize)
 
 
 def create_model_and_trainer(train, dev, labels, tokenizer, pretrained='nlpaueb/legal-bert-base-uncased', batch_size=16):
