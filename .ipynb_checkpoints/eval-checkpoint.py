@@ -1,3 +1,9 @@
+import spacy
+from spacy.tokens import DocBin
+from datasets import Dataset, load_metric
+from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
+import numpy as np
+
 def load_data(spacy_file='training/data/train.spacy'):
     print("Loading data...")
     doc_bin = DocBin().from_disk(spacy_file)
