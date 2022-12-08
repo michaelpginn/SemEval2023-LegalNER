@@ -21,7 +21,7 @@ def load_data(spacy_file='training/data/train.spacy'):
     return Dataset.from_list(all_sents), sorted(list(all_labels))
 
 
-def process_dataset(dataset, tokenizer):
+def process_dataset(dataset, tokenizer, labels):
     print("Processing dataset...")
     def tokenize(row):
         tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
@@ -89,8 +89,8 @@ def main():
     train, labels = load_data()
     dev, _ = load_data('training/data/train.spacy')
     tokenizer = AutoTokenizer.from_pretrained('nlpaueb/legal-bert-base-uncased')
-    train = process_dataset(train, tokenizer)
-    dev = process_dataset(dev, tokenizer)
+    train = process_dataset(train, tokenizer, labels)
+    dev = process_dataset(dev, tokenizer, labels)
     model, trainer = create_model_and_trainer(train=train,
                                               dev=dev,
                                               labels=labels,
