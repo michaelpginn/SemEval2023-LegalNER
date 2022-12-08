@@ -73,6 +73,14 @@ def create_model_and_trainer(model_path, train, dev, all_labels, tokenizer, batc
     )
     return model, trainer
 
+def process_dataset(dataset, tokenizer, labels):
+    print("Processing dataset...")
+    def tokenize(row):
+        tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
+        aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
+        tokenized['labels'] = aligned_labels
+        return tokenized
+    return dataset.map(tokenize)
 
 def main():
     train, labels = load_data()
