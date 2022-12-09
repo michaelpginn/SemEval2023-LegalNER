@@ -5,6 +5,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification, Trainin
 import numpy as np
 import wandb
 import sys
+import json
 
 def load_data(spacy_file='training/data/train.spacy'):
     print("Loading data...")
@@ -116,7 +117,8 @@ def main():
 
     # Evaluate regardless
     predictions = trainer.predict(dev)
-    print(compute_metrics(predictions, all_labels=labels, verbose=True))
+    all_metrics = compute_metrics(predictions, all_labels=labels, verbose=True)
+    print(json.dumps(all_metrics, indent=4, sort_keys=True))
 
 if __name__ == "__main__":
     main()
