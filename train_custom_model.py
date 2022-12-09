@@ -4,6 +4,7 @@ from spacy.tokens import DocBin
 from datasets import Dataset, load_metric
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
 import numpy as np
+import wandb
 
 def load_data(spacy_file='training/data/train.spacy'):
     print("Loading data...")
@@ -58,7 +59,7 @@ def compute_metrics(p, verbose=False):
     }
 
 
-def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epochs, pretrained='nlpaueb/legal-bert-base-uncased'):
+def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epochs, run_name, pretrained='nlpaueb/legal-bert-base-uncased'):
     print("Creating model...")
     model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
     args = TrainingArguments(
@@ -82,13 +83,16 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
         eval_dataset=dev,
         data_collator=data_collator,
         tokenizer=tokenizer,
-        compute_metrics=compute_metrics
+        compute_metrics=compute_metrics,
+        report_to='wandb',
+        run_name=run_name
     )
     return model, trainer
     
 
 
 def main():
+    wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
     tokenizer = AutoTokenizer.from_pretrained('nlpaueb/legal-bert-base-uncased')
@@ -100,7 +104,8 @@ def main():
                                               all_labels=labels,
                                               tokenizer=tokenizer,
                                               batch_size=64,
-                                              epochs=100)
+                                              epochs=75,
+                                              run_name='legalbert-baseline')
     trainer.train()
     trainer.save_model('./output')
     print(compute_metrics(trainer.predict(dev)), verbose=True)

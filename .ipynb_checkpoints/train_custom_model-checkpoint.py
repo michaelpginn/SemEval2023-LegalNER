@@ -4,6 +4,7 @@ from spacy.tokens import DocBin
 from datasets import Dataset, load_metric
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
 import numpy as np
+import wandb
 
 def load_data(spacy_file='training/data/train.spacy'):
     print("Loading data...")
@@ -31,7 +32,34 @@ def process_dataset(dataset, tokenizer, labels):
     return dataset.map(tokenize)
 
 
-def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epochs, pretrained='nlpaueb/legal-bert-base-uncased'):
+metric = load_metric("seqeval")
+def compute_metrics(p, verbose=False):
+    predictions, labels = p
+    predictions = np.argmax(predictions, axis=2)
+
+    # Remove ignored index (special tokens)
+    true_predictions = [
+        [all_labels[p] for (p, l) in zip(prediction, label) if l != -100]
+        for prediction, label in zip(predictions, labels)
+    ]
+    true_labels = [
+        [all_labels[l] for (p, l) in zip(prediction, label) if l != -100]
+        for prediction, label in zip(predictions, labels)
+    ]
+
+    results = metric.compute(predictions=true_predictions, references=true_labels)
+    if verbose:
+        return results
+    
+    return {
+        "precision": results["overall_precision"],
+        "recall": results["overall_recall"],
+        "f1": results["overall_f1"],
+        "accuracy": results["overall_accuracy"],
+    }
+
+
+def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epochs, run_name, pretrained='nlpaueb/legal-bert-base-uncased'):
     print("Creating model...")
     model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
     args = TrainingArguments(
@@ -48,30 +76,6 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
     )
     data_collator = DataCollatorForTokenClassification(tokenizer)
     
-    metric = load_metric("seqeval")
-
-    def compute_metrics(p):
-        predictions, labels = p
-        predictions = np.argmax(predictions, axis=2)
-
-        # Remove ignored index (special tokens)
-        true_predictions = [
-            [all_labels[p] for (p, l) in zip(prediction, label) if l != -100]
-            for prediction, label in zip(predictions, labels)
-        ]
-        true_labels = [
-            [all_labels[l] for (p, l) in zip(prediction, label) if l != -100]
-            for prediction, label in zip(predictions, labels)
-        ]
-
-        results = metric.compute(predictions=true_predictions, references=true_labels)
-        return {
-            "precision": results["overall_precision"],
-            "recall": results["overall_recall"],
-            "f1": results["overall_f1"],
-            "accuracy": results["overall_accuracy"],
-        }
-    
     trainer = Trainer(
         model,
         args,
@@ -79,26 +83,32 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
         eval_dataset=dev,
         data_collator=data_collator,
         tokenizer=tokenizer,
-        compute_metrics=compute_metrics
+        compute_metrics=compute_metrics,
+        report_to='wandb',
+        run_name=run_name
     )
     return model, trainer
     
 
 
 def main():
+    wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
     tokenizer = AutoTokenizer.from_pretrained('nlpaueb/legal-bert-base-uncased')
     train = process_dataset(train, tokenizer, labels)
+    dev = dev.filter(lambda row: row['tags'][0] != '')
     dev = process_dataset(dev, tokenizer, labels)
     model, trainer = create_model_and_trainer(train=train,
                                               dev=dev,
                                               all_labels=labels,
                                               tokenizer=tokenizer,
                                               batch_size=64,
-                                              epochs=100)
+                                              epochs=75,
+                                              run_name='legalbert-baseline')
     trainer.train()
     trainer.save_model('./output')
+    print(compute_metrics(trainer.predict(dev)), verbose=True)
 
 if __name__ == "__main__":
     main()
