@@ -110,7 +110,7 @@ def main():
                                               batch_size=64,
                                               epochs=30,
                                               run_name='legalbert-baseline',
-                                              pretrained='./output' if eval_mode else 'nlpaueb/legal-bert-base-uncased')
+                                              pretrained='./output' if eval_mode else 'roberta-base')
     if not eval_mode:
         trainer.train()
         trainer.save_model('./output')
