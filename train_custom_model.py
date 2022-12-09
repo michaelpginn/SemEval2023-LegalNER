@@ -101,7 +101,7 @@ def main():
         wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
-    tokenizer = AutoTokenizer.from_pretrained('roberta-base')
+    tokenizer = AutoTokenizer.from_pretrained('roberta-base', use_fast=False, add_prefix_space=True)
     train = process_dataset(train, tokenizer, labels)
     dev = dev.filter(lambda row: row['tags'][0] != '')
     dev = process_dataset(dev, tokenizer, labels)
