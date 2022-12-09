@@ -32,8 +32,8 @@ def process_dataset(dataset, tokenizer, labels):
 
 
 metric = load_metric("seqeval")
-def compute_metrics(p, verbose=False):
-    predictions, labels = p
+def compute_metrics(pred, all_labels, verbose=False):
+    predictions, labels = pred
     predictions = np.argmax(predictions, axis=2)
 
     # Remove ignored index (special tokens)
@@ -84,11 +84,10 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
         eval_dataset=dev,
         data_collator=data_collator,
         tokenizer=tokenizer,
-        compute_metrics=compute_metrics,
+        compute_metrics=lambda pred: compute_metrics(pred, all_labels),
     )
     return model, trainer
     
-
 
 def main():
     wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
@@ -107,7 +106,7 @@ def main():
                                               run_name='legalbert-baseline')
     trainer.train()
     trainer.save_model('./output')
-    print(compute_metrics(trainer.predict(dev)), verbose=True)
+    print(compute_metrics(trainer.predict(dev), all_labels=labels, verbose=True))
 
 if __name__ == "__main__":
     main()
