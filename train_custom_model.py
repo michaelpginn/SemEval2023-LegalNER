@@ -109,7 +109,7 @@ def main():
                                               all_labels=labels,
                                               tokenizer=tokenizer,
                                               batch_size=64,
-                                              epochs=30,
+                                              epochs=75,
                                               run_name='legalbert-baseline',
                                               pretrained='./output' if eval_mode else 'roberta-base')
     if not eval_mode:
