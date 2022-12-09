@@ -4,6 +4,7 @@ from datasets import Dataset, load_metric
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
 import numpy as np
 import wandb
+import sys
 
 def load_data(spacy_file='training/data/train.spacy'):
     print("Loading data...")
@@ -90,7 +91,10 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
     
 
 def main():
-    wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
+    if sys.argv[1] == 'eval':
+        eval_mode = True
+    else:
+        wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
     tokenizer = AutoTokenizer.from_pretrained('nlpaueb/legal-bert-base-uncased')
@@ -103,10 +107,16 @@ def main():
                                               tokenizer=tokenizer,
                                               batch_size=64,
                                               epochs=75,
-                                              run_name='legalbert-baseline')
-    trainer.train()
-    trainer.save_model('./output')
-    print(compute_metrics(trainer.predict(dev), all_labels=labels, verbose=True))
+                                              run_name='legalbert-baseline',
+                                              pretrained='./output' if eval_mode else 'nlpaueb/legal-bert-base-uncased')
+    if not eval_mode:
+        trainer.train()
+        trainer.save_model('./output')
+
+    # Evaluate regardless
+    predictions = trainer.predict(dev)
+    predictions = np.argmax(predictions, axis=2)
+    print(compute_metrics(predictions, all_labels=labels, verbose=True))
 
 if __name__ == "__main__":
     main()
