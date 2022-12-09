@@ -12,7 +12,7 @@ The goal of this project is to perform Named Entity Recognition (NER) on Indian 
 
 ## Experiments
 
-We have noticed that whether certain entity types are tagged is dependent on whether the sentence comes from the 
+> We have noticed that whether certain entity types are tagged is dependent on whether the sentence comes from the preamble or judgement text. To address this, we have trained a classification model that predicts what document type a sentence comes from. We will use this information to augment our model, as described below.
 
 1. **Baseline and Modifications.** The baseline uses the spaCy transition-based NER parser. We will try this (and slight modifications).
     1. **Baseline system [[2]](#2)** - (https://github.com/Legal-NLP-EkStep/legal_NER) Uses RoBERTa as the embeddings and spaCy Transition-based NER parser.
@@ -25,7 +25,7 @@ We have noticed that whether certain entity types are tagged is dependent on whe
     3. **Add document type token** - Append a special token to each document that indicates the document type.
     4. **Pretrain transformer for classification** - Pretrain first for classification, then decapitate and finetune for NER.
     5. **Add document type to FFN** - Append a node to the FFN at the head of the model that indicates the document type.
-    6. 
+    6. **Train two models** - Train two separate models by dividing data using the classifier. At prediction time, use the classifier to choose a model to make predictions.
   
 6. **Combined System** - As in [Jiang et al](#3), leverage the output of the spaCy and Stanford NER models.
 
@@ -42,6 +42,7 @@ We have noticed that whether certain entity types are tagged is dependent on whe
 | 1.iv. Larger Hidden State | 1 | 0.890 | 0.891 | 0.889 |
 
 | Model | F1 | Prec | Rec |
+| --- | --- | --- | --- |
 | Sentence Classifier | | | |
 
 
