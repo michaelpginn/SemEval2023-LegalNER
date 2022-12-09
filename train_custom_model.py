@@ -5,7 +5,6 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification, Trainin
 import numpy as np
 import wandb
 import sys
-import json
 
 def load_data(spacy_file='training/data/train.spacy'):
     print("Loading data...")
@@ -110,7 +109,7 @@ def main():
                                               all_labels=labels,
                                               tokenizer=tokenizer,
                                               batch_size=64,
-                                              epochs=75,
+                                              epochs=40,
                                               run_name='roberta-baseline',
                                               pretrained='./output' if eval_mode else 'roberta-base')
     if not eval_mode:
