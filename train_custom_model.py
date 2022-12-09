@@ -96,6 +96,7 @@ def main():
     if sys.argv[1] == 'eval':
         eval_mode = True
     else:
+        eval_mode = False
         wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
