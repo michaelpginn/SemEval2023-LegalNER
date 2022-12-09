@@ -34,7 +34,8 @@ def process_dataset(dataset, tokenizer, labels):
 
 metric = load_metric("seqeval")
 def compute_metrics(pred, all_labels, verbose=False):
-    predictions, labels = pred
+    predictions = pred[0]
+    labels = pred[1]
     predictions = np.argmax(predictions, axis=2)
 
     # Remove ignored index (special tokens)
@@ -106,7 +107,7 @@ def main():
                                               all_labels=labels,
                                               tokenizer=tokenizer,
                                               batch_size=64,
-                                              epochs=75,
+                                              epochs=30,
                                               run_name='legalbert-baseline',
                                               pretrained='./output' if eval_mode else 'nlpaueb/legal-bert-base-uncased')
     if not eval_mode:
@@ -115,7 +116,6 @@ def main():
 
     # Evaluate regardless
     predictions = trainer.predict(dev)
-    predictions = np.argmax(predictions, axis=2)
     print(compute_metrics(predictions, all_labels=labels, verbose=True))
 
 if __name__ == "__main__":
