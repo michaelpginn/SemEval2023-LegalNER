@@ -1,4 +1,3 @@
-# Load data from spaCy format
 import spacy
 from spacy.tokens import DocBin
 from datasets import Dataset, load_metric
@@ -73,6 +72,8 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
         weight_decay=0.01,
         save_strategy="epoch",
         save_total_limit=3,
+        report_to='wandb',
+        run_name=run_name
     )
     data_collator = DataCollatorForTokenClassification(tokenizer)
     
@@ -84,8 +85,6 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
         data_collator=data_collator,
         tokenizer=tokenizer,
         compute_metrics=compute_metrics,
-        report_to='wandb',
-        run_name=run_name
     )
     return model, trainer
     
