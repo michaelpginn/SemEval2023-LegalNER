@@ -119,7 +119,8 @@ def main():
     # Evaluate regardless
     predictions = trainer.predict(dev)
     all_metrics = compute_metrics(predictions, all_labels=labels, verbose=True)
-    print(json.dumps(all_metrics, indent=4, sort_keys=True))
+    for key in all_metrics:
+        print(key, ':\t', all_metrics[key])
 
 if __name__ == "__main__":
     main()
