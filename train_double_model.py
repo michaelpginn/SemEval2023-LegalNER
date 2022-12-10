@@ -112,6 +112,8 @@ class DoubleTokenClassifierModel(torch.nn.Module):
         row_mask = doc_class > 0
         flipped_row_mask = ~row_mask
 
+        print(row_mask.unsqueeze(1))
+
         preamble_batch_input_ids = torch.masked_select(input_ids, row_mask.unsqueeze(1)) if input_ids else None
         preamble_attention_mask = torch.masked_select(attention_mask, row_mask.unsqueeze(1)) if attention_mask else None
         preamble_position_ids = torch.masked_select(position_ids, row_mask.unsqueeze(1)) if position_ids else None
