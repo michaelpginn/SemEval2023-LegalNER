@@ -31,8 +31,6 @@ def label_doc_types(dataset, classifier_tokenizer, classifier_model):
 def compute_class_preds(dataset, classifier_model: train_sentence_classifier.SentenceBinaryClassifier):
     """Adds a class label to each item in the dataset by running the predictive model"""
     classifier_tokenizer = AutoTokenizer.from_pretrained("nlpaueb/legal-bert-base-uncased")
-    classifier_model = train_sentence_classifier.SentenceBinaryClassifier(hidden_size=128)
-    classifier_model.load_state_dict(torch.load('./sentence-classification-model.pth'))
 
     def tokenize(row):
         return classifier_tokenizer(row['tokens'],
@@ -149,7 +147,8 @@ def main():
         eval_mode = False
         wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
 
-
+    classifier_model = train_sentence_classifier.SentenceBinaryClassifier(hidden_size=128)
+    classifier_model.load_state_dict(torch.load('./sentence-classification-model.pth'))
 
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
