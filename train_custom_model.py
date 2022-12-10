@@ -26,7 +26,7 @@ def load_data(spacy_file='training/data/train.spacy'):
 
 def predict_class(tokens, classifier_tokenizer, classifier_model):
     """Predicts whether a sentence comes from the judgement or preamble. Returns True for preamble."""
-    classifier_tokenized = classifier_tokenizer.tokenizer(
+    classifier_tokenized = classifier_tokenizer(
         tokens,
         padding='max_length',
         truncation=True,
