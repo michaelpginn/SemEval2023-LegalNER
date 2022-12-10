@@ -109,21 +109,19 @@ class DoubleTokenClassifierModel(torch.nn.Module):
         self.judgement_model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
 
     def forward(self, doc_class: torch.LongTensor, input_ids: torch.LongTensor = None, attention_mask = None, position_ids = None, labels = None):
-        print(doc_class)
-
         row_mask = doc_class > 0
         flipped_row_mask = ~row_mask
 
-        preamble_batch_input_ids = torch.masked_select(input_ids, row_mask.unsqueeze(1))
-        preamble_attention_mask = torch.masked_select(attention_mask, row_mask.unsqueeze(1))
-        preamble_position_ids = torch.masked_select(position_ids, row_mask.unsqueeze(1))
-        preamble_labels = torch.masked_select(labels, row_mask.unsqueeze(1))
+        preamble_batch_input_ids = torch.masked_select(input_ids, row_mask.unsqueeze(1)) if input_ids else None
+        preamble_attention_mask = torch.masked_select(attention_mask, row_mask.unsqueeze(1)) if attention_mask else None
+        preamble_position_ids = torch.masked_select(position_ids, row_mask.unsqueeze(1)) if position_ids else None
+        preamble_labels = torch.masked_select(labels, row_mask.unsqueeze(1)) if labels else None
         preamble_output = self.preamble_model(input_ids=preamble_batch_input_ids, attention_mask=preamble_attention_mask, position_ids=preamble_position_ids, labels=preamble_labels)
 
-        judgement_batch_input_ids = torch.masked_select(input_ids, flipped_row_mask.unsqueeze(1))
-        judgement_attention_mask = torch.masked_select(attention_mask, flipped_row_mask.unsqueeze(1))
-        judgement_position_ids = torch.masked_select(position_ids, flipped_row_mask.unsqueeze(1))
-        judgement_labels = torch.masked_select(labels, flipped_row_mask.unsqueeze(1))
+        judgement_batch_input_ids = torch.masked_select(input_ids, flipped_row_mask.unsqueeze(1)) if input_ids else None
+        judgement_attention_mask = torch.masked_select(attention_mask, flipped_row_mask.unsqueeze(1)) if attention_mask else None
+        judgement_position_ids = torch.masked_select(position_ids, flipped_row_mask.unsqueeze(1)) if position_ids else None
+        judgement_labels = torch.masked_select(labels, flipped_row_mask.unsqueeze(1)) if labels else None
         judgement_output = self.judgement_model(input_ids=judgement_batch_input_ids,
                                               attention_mask=judgement_attention_mask,
                                               position_ids=judgement_position_ids, labels=judgement_labels)
