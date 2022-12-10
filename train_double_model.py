@@ -129,6 +129,8 @@ class DoubleTokenClassifierModel(torch.nn.Module):
         loss = preamble_output.loss + judgement_output.loss
 
         # Pick the right logits together
+        print(input_ids)
+        print(preamble_output)
         preamble_batch_index = 0
         judgement_batch_index = 0
         logits = torch.zeros([len(input_ids), len(preamble_output[0])]).to(device)
