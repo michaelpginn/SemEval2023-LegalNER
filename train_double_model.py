@@ -135,16 +135,16 @@ class DoubleTokenClassifierModel(torch.nn.Module):
 
         preamble_batch_index = 0
         judgement_batch_index = 0
-        logits = torch.zeros([len(input_ids), len(labels)]).to(device)
+        logits = []
         for i in range(len(logits)):
             if row_mask[i]:
-                logits[i] = preamble_output.logits[preamble_batch_index]
+                logits.append(preamble_output.logits[preamble_batch_index])
                 preamble_batch_index += 1
             else:
-                logits[i] = judgement_output.logits[judgement_batch_index]
+                logits.append(judgement_output.logits[judgement_batch_index])
                 judgement_batch_index += 1
 
-        return TokenClassifierOutput(loss=loss, logits=logits)
+        return TokenClassifierOutput(loss=loss, logits=torch.stack(logits).to(device))
 
 
 
