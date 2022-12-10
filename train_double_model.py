@@ -2,6 +2,7 @@ import spacy
 from spacy.tokens import DocBin
 from datasets import Dataset, load_metric
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
+from transformers.modeling_outputs import TokenClassifierOutput
 import numpy as np
 import wandb
 import sys
@@ -59,23 +60,20 @@ def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence
     class_preds = compute_class_preds(dataset, classifier_model)
 
     def tokenize(row, idx):
-        # Add special token for document type
-        is_preamble = class_preds[idx]
-        if is_preamble:
-            row['tokens'].append('<PREAMBLE>')
-        else:
-            row['tokens'].append('<JUDGEMENT>')
-        row['tags'].append('O')
-
         tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
         aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
         tokenized['labels'] = aligned_labels
+
+        """Store the class for the row"""
+        tokenized['doc_class'] = class_preds[idx]
 
         return tokenized
     return dataset.map(tokenize, with_indices=True)
 
 
 metric = load_metric("seqeval")
+
+
 def compute_metrics(pred, all_labels, verbose=False):
     predictions = pred[0]
     labels = pred[1]
@@ -103,10 +101,50 @@ def compute_metrics(pred, all_labels, verbose=False):
     }
 
 
+class DoubleTokenClassifierModel(torch.nn.Module):
+    def __init__(self, all_labels, pretrained):
+        self.preamble_model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
+        self.judgement_model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
+
+    def forward(self, input_ids: torch.LongTensor, attention_mask, position_ids, labels, doc_class):
+        row_mask = torch.BoolTensor(doc_class).to(device)
+        flipped_row_mask = ~row_mask
+
+        preamble_batch_input_ids = torch.masked_select(input_ids, row_mask.unsqueeze(1))
+        preamble_attention_mask = torch.masked_select(attention_mask, row_mask.unsqueeze(1))
+        preamble_position_ids = torch.masked_select(position_ids, row_mask.unsqueeze(1))
+        preamble_labels = torch.masked_select(labels, row_mask.unsqueeze(1))
+        preamble_output = self.preamble_model(input_ids=preamble_batch_input_ids, attention_mask=preamble_attention_mask, position_ids=preamble_position_ids, labels=preamble_labels)
+
+        judgement_batch_input_ids = torch.masked_select(input_ids, flipped_row_mask.unsqueeze(1))
+        judgement_attention_mask = torch.masked_select(attention_mask, flipped_row_mask.unsqueeze(1))
+        judgement_position_ids = torch.masked_select(position_ids, flipped_row_mask.unsqueeze(1))
+        judgement_labels = torch.masked_select(labels, flipped_row_mask.unsqueeze(1))
+        judgement_output = self.judgement_model(input_ids=judgement_batch_input_ids,
+                                              attention_mask=judgement_attention_mask,
+                                              position_ids=judgement_position_ids, labels=judgement_labels)
+
+        loss = preamble_output.loss + judgement_output.loss
+
+        # Pick the right logits together
+        preamble_batch_index = 0
+        judgement_batch_index = 0
+        logits = torch.zeros([len(input_ids), len(preamble_output[0])]).to(device)
+        for i in range(len(logits)):
+            if row_mask[i]:
+                logits[i] = preamble_output.logits[preamble_batch_index]
+                preamble_batch_index += 1
+            else:
+                logits[i] = judgement_output.logits[judgement_batch_index]
+                judgement_batch_index += 1
+
+        return TokenClassifierOutput(loss=loss, logits=logits)
+
+
+
 def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epochs, run_name, pretrained='nlpaueb/legal-bert-base-uncased'):
     print("Creating model...")
     model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
-    model.resize_token_embeddings(len(tokenizer))
     args = TrainingArguments(
         f"checkpoints",
         evaluation_strategy = "epoch",
@@ -149,14 +187,13 @@ def main():
 
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
-    tokenizer = AutoTokenizer.from_pretrained('roberta-base', add_prefix_space=True)
 
-    # For our custom tokens, let's add them
-    tokenizer.add_tokens(['<PREAMBLE>', '<JUDGEMENT>'])
+    tokenizer = AutoTokenizer.from_pretrained('roberta-base', add_prefix_space=True)
 
     train = process_dataset(train, tokenizer, labels, classifier_model=classifier_model)
     dev = dev.filter(lambda row: row['tags'][0] != '')
     dev = process_dataset(dev, tokenizer, labels, classifier_model=classifier_model)
+
     model, trainer = create_model_and_trainer(train=train,
                                               dev=dev,
                                               all_labels=labels,
