@@ -103,6 +103,7 @@ def compute_metrics(pred, all_labels, verbose=False):
 
 class DoubleTokenClassifierModel(torch.nn.Module):
     def __init__(self, all_labels, pretrained):
+        super().__init__()
         self.preamble_model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
         self.judgement_model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
 
