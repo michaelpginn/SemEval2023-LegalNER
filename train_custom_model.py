@@ -24,31 +24,51 @@ def load_data(spacy_file='training/data/train.spacy'):
     return Dataset.from_list(all_sents), sorted(list(all_labels))
 
 
-def predict_class(tokens, classifier_tokenizer, classifier_model):
-    """Predicts whether a sentence comes from the judgement or preamble. Returns True for preamble."""
-    classifier_tokenized = classifier_tokenizer(
-        tokens,
-        padding='max_length',
-        truncation=True,
-        is_split_into_words=True,
-        return_token_type_ids=False,
-        return_tensors='pt'
-    )
-    return classifier_model(classifier_tokenized).item() > 0.5
+def label_doc_types(dataset, classifier_tokenizer, classifier_model):
+    """Evaluate the classification model on the dataset and return the dataset augmented with the doc type"""
+
+
+def compute_class_preds(dataset, classifier_model: train_sentence_classifier.SentenceBinaryClassifier):
+    """Adds a class label to each item in the dataset by running the predictive model"""
+    classifier_tokenizer = AutoTokenizer.from_pretrained("nlpaueb/legal-bert-base-uncased")
+    classifier_model = train_sentence_classifier.SentenceBinaryClassifier(hidden_size=128)
+    classifier_model.load_state_dict(torch.load('./sentence-classification-model.pth'))
+
+    def tokenize(row):
+        return classifier_tokenizer(row['tokens'],
+                                    truncation=True,
+                                    is_split_into_words=True,
+                                    padding='max_length',
+                                    return_token_type_ids=False,
+                                    return_tensors='pt')
+
+    dataset_for_prediction = dataset.map(tokenize, batched=True)
+
+    class_labels = [0] * len(dataset_for_prediction)
+
+    def predict(row, idx):
+        preds = (classifier_model(row) > 0.5).tolist()
+        for i, pred_i in zip(idx, range(len(preds))):
+            class_labels[i] = preds[pred_i][0]
+        return None
+
+    dataset_for_prediction.map(predict, batched=True, with_indices=True)
+    return class_labels
 
 
 def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence_classifier.SentenceBinaryClassifier):
     print("Processing dataset...")
-    classifier_tokenizer = AutoTokenizer.from_pretrained("nlpaueb/legal-bert-base-uncased")
     class_tokens = tokenizer.convert_tokens_to_ids(['<PREAMBLE>', '<JUDGEMENT>'])
 
-    def tokenize(row):
+    class_preds = compute_class_preds(dataset, classifier_model)
+
+    def tokenize(row, idx):
         tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
         aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
         tokenized['labels'] = aligned_labels
 
         # Add special token for document type
-        is_preamble = predict_class(row['tokens'], classifier_tokenizer, classifier_model)
+        is_preamble = class_preds[idx]
         if is_preamble:
             tokenized['input_ids'].append(class_tokens[0])
         else:
@@ -58,7 +78,7 @@ def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence
         tokenized['labels'].append(-100)
 
         return tokenized
-    return dataset.map(tokenize)
+    return dataset.map(tokenize, with_indices=True)
 
 
 metric = load_metric("seqeval")
@@ -129,16 +149,14 @@ def main():
         eval_mode = False
         wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
 
-    classifier_model = train_sentence_classifier.SentenceBinaryClassifier(hidden_size=128)
-    classifier_model.load_state_dict(torch.load('./sentence-classification-model.pth'))
+
 
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
     tokenizer = AutoTokenizer.from_pretrained('roberta-base', add_prefix_space=True)
 
     # For our custom tokens, let's add them
-    tokenizer.add_tokens(['[PREAMBLE]', '[JUDGEMENT]'])
-
+    tokenizer.add_special_tokens({'additional_special_tokens': ['<PREAMBLE>', '<JUDGEMENT>']})
 
     train = process_dataset(train, tokenizer, labels, classifier_model=classifier_model)
     dev = dev.filter(lambda row: row['tags'][0] != '')
