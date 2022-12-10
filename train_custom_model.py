@@ -60,18 +60,18 @@ def compute_class_preds(dataset, classifier_model: train_sentence_classifier.Sen
 
 def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence_classifier.SentenceBinaryClassifier):
     print("Processing dataset...")
-    class_tokens = tokenizer.convert_tokens_to_ids(['<PREAMBLE>', '<JUDGEMENT>'])
-
-    class_preds = compute_class_preds(dataset, classifier_model)
+    # class_tokens = tokenizer.convert_tokens_to_ids(['<PREAMBLE>', '<JUDGEMENT>'])
+    #
+    # class_preds = compute_class_preds(dataset, classifier_model)
 
     def tokenize(row, idx):
         # Add special token for document type
-        is_preamble = True
-        if is_preamble:
-            row['tokens'].append('<PREAMBLE>')
-        else:
-            row['tokens'].append('<JUDGEMENT>')
-        row['tags'].append('O')
+        # is_preamble = True
+        # if is_preamble:
+        #     row['tokens'].append('<PREAMBLE>')
+        # else:
+        #     row['tokens'].append('<JUDGEMENT>')
+        # row['tags'].append('O')
 
         tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
         aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
@@ -149,20 +149,20 @@ def main():
         eval_mode = False
         wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
 
-    classifier_model = train_sentence_classifier.SentenceBinaryClassifier(hidden_size=128)
-    classifier_model.load_state_dict(torch.load('./sentence-classification-model.pth'))
-    classifier_model.to(device)
+    # classifier_model = train_sentence_classifier.SentenceBinaryClassifier(hidden_size=128)
+    # classifier_model.load_state_dict(torch.load('./sentence-classification-model.pth'))
+    # classifier_model.to(device)
 
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
     tokenizer = AutoTokenizer.from_pretrained('roberta-base', add_prefix_space=True)
 
     # For our custom tokens, let's add them
-    tokenizer.add_tokens(['<PREAMBLE>', '<JUDGEMENT>'])
+    # tokenizer.add_tokens(['<PREAMBLE>', '<JUDGEMENT>'])
 
-    train = process_dataset(train, tokenizer, labels, classifier_model=classifier_model)
+    train = process_dataset(train, tokenizer, labels)
     dev = dev.filter(lambda row: row['tags'][0] != '')
-    dev = process_dataset(dev, tokenizer, labels, classifier_model=classifier_model)
+    dev = process_dataset(dev, tokenizer, labels)
     model, trainer = create_model_and_trainer(train=train,
                                               dev=dev,
                                               all_labels=labels,
