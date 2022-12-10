@@ -109,6 +109,8 @@ class DoubleTokenClassifierModel(torch.nn.Module):
         self.judgement_model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
 
     def forward(self, doc_class: torch.LongTensor, input_ids: torch.LongTensor = None, attention_mask = None, position_ids = None, labels = None):
+        print(doc_class)
+
         row_mask = doc_class > 0
         flipped_row_mask = ~row_mask
 
