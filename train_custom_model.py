@@ -41,6 +41,7 @@ def compute_class_preds(dataset, classifier_model: train_sentence_classifier.Sen
                                     return_tensors='pt')
 
     dataset_for_prediction = dataset.map(tokenize, batched=True)
+    dataset_for_prediction.set_format(type="torch", columns=['input_ids', 'attention_mask'])
 
     class_labels = [0] * len(dataset_for_prediction)
 
