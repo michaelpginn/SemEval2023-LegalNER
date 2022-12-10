@@ -136,7 +136,7 @@ class DoubleTokenClassifierModel(torch.nn.Module):
         preamble_batch_index = 0
         judgement_batch_index = 0
         logits = []
-        for i in range(len(logits)):
+        for i in range(len(doc_class)):
             if row_mask[i]:
                 logits.append(preamble_output.logits[preamble_batch_index])
                 preamble_batch_index += 1
