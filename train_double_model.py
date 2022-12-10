@@ -116,12 +116,14 @@ class DoubleTokenClassifierModel(torch.nn.Module):
         preamble_attention_mask = None if attention_mask is None else attention_mask[row_mask]
         preamble_position_ids = None if position_ids is None else position_ids[row_mask]
         preamble_labels = None if labels is None else labels[row_mask]
+        print('PREAMBLE INPUT', preamble_batch_input_ids, preamble_attention_mask, preamble_position_ids, preamble_labels)
         preamble_output = self.preamble_model(input_ids=preamble_batch_input_ids, attention_mask=preamble_attention_mask, position_ids=preamble_position_ids, labels=preamble_labels)
 
         judgement_batch_input_ids = None if input_ids is None else input_ids[flipped_row_mask]
         judgement_attention_mask = None if attention_mask is None else attention_mask[flipped_row_mask]
         judgement_position_ids = None if position_ids is None else position_ids[flipped_row_mask]
         judgement_labels = None if labels is None else labels[flipped_row_mask]
+        print('JUDGEMENT INPUT', judgement_batch_input_ids, judgement_attention_mask, judgement_position_ids, judgement_labels)
         judgement_output = self.judgement_model(input_ids=judgement_batch_input_ids,
                                               attention_mask=judgement_attention_mask,
                                               position_ids=judgement_position_ids, labels=judgement_labels)
@@ -129,8 +131,10 @@ class DoubleTokenClassifierModel(torch.nn.Module):
         loss = preamble_output.loss + judgement_output.loss
 
         # Pick the right logits together
-        print(input_ids)
+        print('OUTPUT')
         print(preamble_output)
+        print(judgement_output)
+
         preamble_batch_index = 0
         judgement_batch_index = 0
         logits = torch.zeros([len(input_ids), len(preamble_output[0])]).to(device)
