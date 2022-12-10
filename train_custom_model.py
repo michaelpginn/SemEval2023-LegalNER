@@ -5,6 +5,8 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification, Trainin
 import numpy as np
 import wandb
 import sys
+import train_sentence_classifier
+import torch
 
 def load_data(spacy_file='training/data/train.spacy'):
     print("Loading data...")
@@ -22,12 +24,39 @@ def load_data(spacy_file='training/data/train.spacy'):
     return Dataset.from_list(all_sents), sorted(list(all_labels))
 
 
-def process_dataset(dataset, tokenizer, labels):
+def predict_class(tokens, classifier_tokenizer, classifier_model):
+    """Predicts whether a sentence comes from the judgement or preamble. Returns True for preamble."""
+    classifier_tokenized = classifier_tokenizer.tokenizer(
+        tokens,
+        padding='max_length',
+        truncation=True,
+        is_split_into_words=True,
+        return_token_type_ids=False,
+        return_tensors='pt'
+    )
+    return classifier_model(classifier_tokenized).item() > 0.5
+
+
+def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence_classifier.SentenceBinaryClassifier):
     print("Processing dataset...")
+    classifier_tokenizer = AutoTokenizer.from_pretrained("nlpaueb/legal-bert-base-uncased")
+    class_tokens = tokenizer.convert_tokens_to_ids(['<PREAMBLE>', '<JUDGEMENT>'])
+
     def tokenize(row):
         tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
         aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
         tokenized['labels'] = aligned_labels
+
+        # Add special token for document type
+        is_preamble = predict_class(row['tokens'], classifier_tokenizer, classifier_model)
+        if is_preamble:
+            tokenized['input_ids'].append(class_tokens[0])
+        else:
+            tokenized['input_ids'].append(class_tokens[1])
+        # Also add the appropriate label and attention mask
+        tokenized['attention_mask'].append(1)
+        tokenized['labels'].append(-100)
+
         return tokenized
     return dataset.map(tokenize)
 
@@ -63,6 +92,7 @@ def compute_metrics(pred, all_labels, verbose=False):
 def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epochs, run_name, pretrained='nlpaueb/legal-bert-base-uncased'):
     print("Creating model...")
     model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
+    model.resize_token_embeddings(len(tokenizer))
     args = TrainingArguments(
         f"checkpoints",
         evaluation_strategy = "epoch",
@@ -98,12 +128,21 @@ def main():
     else:
         eval_mode = False
         wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
+
+    classifier_model = train_sentence_classifier.SentenceBinaryClassifier(hidden_size=128)
+    classifier_model.load_state_dict(torch.load('./sentence-classification-model.pth'))
+
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
     tokenizer = AutoTokenizer.from_pretrained('roberta-base', add_prefix_space=True)
-    train = process_dataset(train, tokenizer, labels)
+
+    # For our custom tokens, let's add them
+    tokenizer.add_tokens(['[PREAMBLE]', '[JUDGEMENT]'])
+
+
+    train = process_dataset(train, tokenizer, labels, classifier_model=classifier_model)
     dev = dev.filter(lambda row: row['tags'][0] != '')
-    dev = process_dataset(dev, tokenizer, labels)
+    dev = process_dataset(dev, tokenizer, labels, classifier_model=classifier_model)
     model, trainer = create_model_and_trainer(train=train,
                                               dev=dev,
                                               all_labels=labels,
@@ -112,6 +151,8 @@ def main():
                                               epochs=40,
                                               run_name='roberta-baseline',
                                               pretrained='./output' if eval_mode else 'roberta-base')
+
+
     if not eval_mode:
         trainer.train()
         trainer.save_model('./output')
