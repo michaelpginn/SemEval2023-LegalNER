@@ -144,7 +144,7 @@ class DoubleTokenClassifierModel(torch.nn.Module):
 
 def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epochs, run_name, pretrained='nlpaueb/legal-bert-base-uncased'):
     print("Creating model...")
-    model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
+    model = DoubleTokenClassifierModel(all_labels, pretrained)
     args = TrainingArguments(
         f"checkpoints",
         evaluation_strategy = "epoch",
