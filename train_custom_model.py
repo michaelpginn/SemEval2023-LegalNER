@@ -30,6 +30,8 @@ def label_doc_types(dataset, classifier_tokenizer, classifier_model):
 
 def compute_class_preds(dataset, classifier_model: train_sentence_classifier.SentenceBinaryClassifier):
     """Adds a class label to each item in the dataset by running the predictive model"""
+    print("Making class predictions")
+    return [0] * len(dataset)
     classifier_tokenizer = AutoTokenizer.from_pretrained("nlpaueb/legal-bert-base-uncased")
 
     def tokenize(row):
@@ -62,19 +64,17 @@ def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence
     class_preds = compute_class_preds(dataset, classifier_model)
 
     def tokenize(row, idx):
+        # Add special token for document type
+        is_preamble = True
+        if is_preamble:
+            row['tokens'].append('<PREAMBLE>')
+        else:
+            row['tokens'].append('<JUDGEMENT>')
+        row['tags'].append('O')
+
         tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
         aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
         tokenized['labels'] = aligned_labels
-
-        # Add special token for document type
-        is_preamble = class_preds[idx]
-        if is_preamble:
-            tokenized['input_ids'].append(class_tokens[0])
-        else:
-            tokenized['input_ids'].append(class_tokens[1])
-        # Also add the appropriate label and attention mask
-        tokenized['attention_mask'].append(1)
-        tokenized['labels'].append(-100)
 
         return tokenized
     return dataset.map(tokenize, with_indices=True)
@@ -156,7 +156,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained('roberta-base', add_prefix_space=True)
 
     # For our custom tokens, let's add them
-    tokenizer.add_special_tokens({'additional_special_tokens': ['<PREAMBLE>', '<JUDGEMENT>']})
+    tokenizer.add_tokens(['<PREAMBLE>', '<JUDGEMENT>'])
 
     train = process_dataset(train, tokenizer, labels, classifier_model=classifier_model)
     dev = dev.filter(lambda row: row['tags'][0] != '')
