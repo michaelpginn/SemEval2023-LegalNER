@@ -65,7 +65,7 @@ def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence
         tokenized['labels'] = aligned_labels
 
         """Store the class for the row"""
-        tokenized['doc_class'] = class_preds[idx]
+        tokenized['doc_class'] = class_preds[idx] == 1
 
         return tokenized
     return dataset.map(tokenize, with_indices=True)
@@ -108,7 +108,7 @@ class DoubleTokenClassifierModel(torch.nn.Module):
         self.judgement_model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
 
     def forward(self, doc_class: torch.LongTensor, input_ids: torch.LongTensor = None, attention_mask = None, position_ids = None, labels = None):
-        row_mask = torch.BoolTensor(doc_class).to(device)
+        row_mask = doc_class
         flipped_row_mask = ~row_mask
 
         preamble_batch_input_ids = torch.masked_select(input_ids, row_mask.unsqueeze(1))
