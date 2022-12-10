@@ -54,7 +54,7 @@ def compute_class_preds(dataset, classifier_model: train_sentence_classifier.Sen
             class_labels[i] = preds[pred_i][0]
         return None
 
-    dataset_for_prediction.map(predict, batched=True, with_indices=True)
+    dataset_for_prediction.map(predict, batched=True, batch_size=64, with_indices=True)
     return class_labels
 
 
