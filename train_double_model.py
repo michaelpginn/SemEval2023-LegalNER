@@ -123,8 +123,8 @@ class DoubleTokenClassifierModel(torch.nn.Module):
         judgement_position_ids = None if position_ids is None else position_ids[flipped_row_mask]
         judgement_labels = None if labels is None else labels[flipped_row_mask]
         judgement_output = self.judgement_model(input_ids=judgement_batch_input_ids,
-                                              attention_mask=judgement_attention_mask,
-                                              position_ids=judgement_position_ids, labels=judgement_labels)
+                                                attention_mask=judgement_attention_mask,
+                                                position_ids=judgement_position_ids, labels=judgement_labels)
 
         loss = (preamble_output.loss or 0) + (judgement_output.loss or 0)
 
@@ -153,7 +153,7 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
         learning_rate=2e-5,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        gradient_accumulation_steps=3,
+        gradient_accumulation_steps=6,
         num_train_epochs=epochs,
         weight_decay=0.01,
         save_strategy="epoch",
@@ -200,7 +200,7 @@ def main():
                                               dev=dev,
                                               all_labels=labels,
                                               tokenizer=tokenizer,
-                                              batch_size=64,
+                                              batch_size=32,
                                               epochs=40,
                                               run_name='roberta-baseline',
                                               pretrained='./output' if eval_mode else 'roberta-base')
