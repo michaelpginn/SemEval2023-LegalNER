@@ -144,6 +144,7 @@ class DoubleTokenClassifierModel(torch.nn.Module):
                 logits.append(judgement_output.logits[judgement_batch_index])
                 judgement_batch_index += 1
 
+        print(logits)
         return TokenClassifierOutput(loss=loss, logits=torch.stack(logits).to(device))
 
 
