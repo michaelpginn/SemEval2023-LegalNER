@@ -31,7 +31,6 @@ def label_doc_types(dataset, classifier_tokenizer, classifier_model):
 def compute_class_preds(dataset, classifier_model: train_sentence_classifier.SentenceBinaryClassifier):
     """Adds a class label to each item in the dataset by running the predictive model"""
     print("Making class predictions")
-    return [0] * len(dataset)
     classifier_tokenizer = AutoTokenizer.from_pretrained("nlpaueb/legal-bert-base-uncased")
 
     def tokenize(row):
