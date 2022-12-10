@@ -26,10 +26,6 @@ def load_data(spacy_file='training/data/train.spacy'):
     return Dataset.from_list(all_sents), sorted(list(all_labels))
 
 
-def label_doc_types(dataset, classifier_tokenizer, classifier_model):
-    """Evaluate the classification model on the dataset and return the dataset augmented with the doc type"""
-
-
 def compute_class_preds(dataset, classifier_model: train_sentence_classifier.SentenceBinaryClassifier):
     """Adds a class label to each item in the dataset by running the predictive model"""
     print("Making class predictions")
@@ -46,7 +42,7 @@ def compute_class_preds(dataset, classifier_model: train_sentence_classifier.Sen
     dataset_for_prediction = dataset.map(tokenize, batched=True)
     dataset_for_prediction.set_format(type="torch", columns=['input_ids', 'attention_mask'], device=device)
 
-    class_labels = [0] * len(dataset_for_prediction)
+    class_labels = [False] * len(dataset_for_prediction)
 
     def predict(row, idx):
         preds = (classifier_model(row) > 0.5).tolist()
@@ -58,20 +54,18 @@ def compute_class_preds(dataset, classifier_model: train_sentence_classifier.Sen
     return class_labels
 
 
-def process_dataset(dataset, tokenizer, labels):
+def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence_classifier.SentenceBinaryClassifier):
     print("Processing dataset...")
-    # class_tokens = tokenizer.convert_tokens_to_ids(['<PREAMBLE>', '<JUDGEMENT>'])
-    #
-    # class_preds = compute_class_preds(dataset, classifier_model)
+    class_preds = compute_class_preds(dataset, classifier_model)
 
     def tokenize(row, idx):
         # Add special token for document type
-        # is_preamble = True
-        # if is_preamble:
-        #     row['tokens'].append('<PREAMBLE>')
-        # else:
-        #     row['tokens'].append('<JUDGEMENT>')
-        # row['tags'].append('O')
+        is_preamble = class_preds[idx]
+        if is_preamble:
+            row['tokens'].append('<PREAMBLE>')
+        else:
+            row['tokens'].append('<JUDGEMENT>')
+        row['tags'].append('O')
 
         tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
         aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
@@ -149,20 +143,20 @@ def main():
         eval_mode = False
         wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
 
-    # classifier_model = train_sentence_classifier.SentenceBinaryClassifier(hidden_size=128)
-    # classifier_model.load_state_dict(torch.load('./sentence-classification-model.pth'))
-    # classifier_model.to(device)
+    classifier_model = train_sentence_classifier.SentenceBinaryClassifier(hidden_size=128)
+    classifier_model.load_state_dict(torch.load('./sentence-classification-model.pth'))
+    classifier_model.to(device)
 
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
     tokenizer = AutoTokenizer.from_pretrained('roberta-base', add_prefix_space=True)
 
     # For our custom tokens, let's add them
-    # tokenizer.add_tokens(['<PREAMBLE>', '<JUDGEMENT>'])
+    tokenizer.add_tokens(['<PREAMBLE>', '<JUDGEMENT>'])
 
-    train = process_dataset(train, tokenizer, labels)
+    train = process_dataset(train, tokenizer, labels, classifier_model=classifier_model)
     dev = dev.filter(lambda row: row['tags'][0] != '')
-    dev = process_dataset(dev, tokenizer, labels)
+    dev = process_dataset(dev, tokenizer, labels, classifier_model=classifier_model)
     model, trainer = create_model_and_trainer(train=train,
                                               dev=dev,
                                               all_labels=labels,
