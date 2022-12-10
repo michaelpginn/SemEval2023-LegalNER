@@ -112,16 +112,16 @@ class DoubleTokenClassifierModel(torch.nn.Module):
         row_mask = doc_class > 0
         flipped_row_mask = ~row_mask
 
-        preamble_batch_input_ids = None if input_ids is None else torch.masked_select(input_ids, row_mask.unsqueeze(1))
-        preamble_attention_mask = None if attention_mask is None else torch.masked_select(attention_mask, row_mask.unsqueeze(1))
-        preamble_position_ids = None if position_ids is None else torch.masked_select(position_ids, row_mask.unsqueeze(1))
-        preamble_labels = None if labels is None else torch.masked_select(labels, row_mask.unsqueeze(1))
+        preamble_batch_input_ids = None if input_ids is None else input_ids[row_mask]
+        preamble_attention_mask = None if attention_mask is None else attention_mask[row_mask]
+        preamble_position_ids = None if position_ids is None else position_ids[row_mask]
+        preamble_labels = None if labels is None else labels[row_mask]
         preamble_output = self.preamble_model(input_ids=preamble_batch_input_ids, attention_mask=preamble_attention_mask, position_ids=preamble_position_ids, labels=preamble_labels)
 
-        judgement_batch_input_ids = None if input_ids is None else torch.masked_select(input_ids, flipped_row_mask.unsqueeze(1))
-        judgement_attention_mask = None if attention_mask is None else torch.masked_select(attention_mask, flipped_row_mask.unsqueeze(1))
-        judgement_position_ids = None if position_ids is None else torch.masked_select(position_ids, flipped_row_mask.unsqueeze(1))
-        judgement_labels = None if labels is None else torch.masked_select(labels, flipped_row_mask.unsqueeze(1))
+        judgement_batch_input_ids = None if input_ids is None else input_ids[flipped_row_mask]
+        judgement_attention_mask = None if attention_mask is None else attention_mask[flipped_row_mask]
+        judgement_position_ids = None if position_ids is None else position_ids[flipped_row_mask]
+        judgement_labels = None if labels is None else labels[flipped_row_mask]
         judgement_output = self.judgement_model(input_ids=judgement_batch_input_ids,
                                               attention_mask=judgement_attention_mask,
                                               position_ids=judgement_position_ids, labels=judgement_labels)
