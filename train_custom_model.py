@@ -8,6 +8,8 @@ import sys
 import train_sentence_classifier
 import torch
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def load_data(spacy_file='training/data/train.spacy'):
     print("Loading data...")
     doc_bin = DocBin().from_disk(spacy_file)
@@ -42,7 +44,7 @@ def compute_class_preds(dataset, classifier_model: train_sentence_classifier.Sen
                                     return_tensors='pt')
 
     dataset_for_prediction = dataset.map(tokenize, batched=True)
-    dataset_for_prediction.set_format(type="torch", columns=['input_ids', 'attention_mask'])
+    dataset_for_prediction.set_format(type="torch", columns=['input_ids', 'attention_mask'], device=device)
 
     class_labels = [0] * len(dataset_for_prediction)
 
@@ -149,6 +151,7 @@ def main():
 
     classifier_model = train_sentence_classifier.SentenceBinaryClassifier(hidden_size=128)
     classifier_model.load_state_dict(torch.load('./sentence-classification-model.pth'))
+    classifier_model.to(device)
 
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
