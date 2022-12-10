@@ -58,7 +58,7 @@ def compute_class_preds(dataset, classifier_model: train_sentence_classifier.Sen
     return class_labels
 
 
-def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence_classifier.SentenceBinaryClassifier):
+def process_dataset(dataset, tokenizer, labels):
     print("Processing dataset...")
     # class_tokens = tokenizer.convert_tokens_to_ids(['<PREAMBLE>', '<JUDGEMENT>'])
     #
