@@ -30,7 +30,7 @@ def load_data(spacy_file='training/data/train.spacy'):
 def compute_class_preds(dataset, classifier_model: train_sentence_classifier.SentenceBinaryClassifier):
     """Adds a class label to each item in the dataset by running the predictive model"""
     print("Making class predictions")
-    return [0] * len(dataset)
+    # return [0] * len(dataset)
     classifier_tokenizer = AutoTokenizer.from_pretrained("nlpaueb/legal-bert-base-uncased")
 
     def tokenize(row):
@@ -129,10 +129,6 @@ class DoubleTokenClassifierModel(torch.nn.Module):
         loss = (preamble_output.loss or 0) + (judgement_output.loss or 0)
 
         # Pick the right logits together
-        print('OUTPUT')
-        print(preamble_output)
-        print(judgement_output)
-
         preamble_batch_index = 0
         judgement_batch_index = 0
         logits = []
@@ -144,7 +140,6 @@ class DoubleTokenClassifierModel(torch.nn.Module):
                 logits.append(judgement_output.logits[judgement_batch_index])
                 judgement_batch_index += 1
 
-        print(logits)
         return TokenClassifierOutput(loss=loss, logits=torch.stack(logits).to(device))
 
 
