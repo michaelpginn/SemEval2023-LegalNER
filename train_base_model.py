@@ -26,7 +26,7 @@ def load_data(spacy_file='training/data/train.spacy'):
     return Dataset.from_list(all_sents), sorted(list(all_labels))
 
 
-def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence_classifier.SentenceBinaryClassifier):
+def process_dataset(dataset, tokenizer, labels):
     print("Processing dataset...")
 
     def tokenize(row, idx):
