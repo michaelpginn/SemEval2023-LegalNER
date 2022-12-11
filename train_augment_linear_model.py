@@ -129,7 +129,7 @@ class RobertaWithAugmentedTokenClassificationHead(torch.nn.Module):
         loss = None
         if labels is not None:
             loss_fct = torch.nn.CrossEntropyLoss()
-            loss = loss_fct(logits.view(-1, self.num_labels))
+            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
 
         return TokenClassifierOutput(
             loss=loss,
