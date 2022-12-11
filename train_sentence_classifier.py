@@ -4,7 +4,8 @@ from transformers import AutoTokenizer, AutoModel
 from typing import List
 import random 
 from tqdm import tqdm
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, precision_score, recall_score
+import sys
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
@@ -60,6 +61,12 @@ def predict(model, sents):
     return (model(sents) > 0.5).float()
 
 
+def eval(labels, preds):
+    print(f"F1 Score: {f1_score(labels, preds, average='macro')}")
+    print(f"Prec: {precision_score(labels, preds, average='macro')}")
+    print(f"Rec: {recall_score(labels, preds, average='macro')}")
+
+
 def training_loop(num_epochs, train_sentences, train_labels, dev_sentences, dev_labels, optimizer, model):
     print("Training...")
     loss_func = torch.nn.BCELoss()
@@ -85,30 +92,33 @@ def training_loop(num_epochs, train_sentences, train_labels, dev_sentences, dev_
             pred = predict(model, sents).squeeze(1)
             dev_preds.extend(pred.cpu())
             dev_labels.extend(list(labels.cpu().numpy()))
-        f1 = f1_score(dev_labels, dev_preds, average='macro')
-        print(f"Dev f1: {f1}")
+        eval(dev_labels, dev_preds)
     return model
 
 def main():
+    if sys.argv[1] == 'eval':
+        eval_mode = True
+    else:
+        eval_mode = False
 
-    print("Loading training data")
-    # Load training data
-    preamble = pd.read_json("NER_TRAIN/NER_TRAIN_PREAMBLE.json")
-    preamble_texts = [item['text'] for item in preamble['data']]
-    judgement = pd.read_json("NER_TRAIN/NER_TRAIN_JUDGEMENT.json")
-    judgement_texts = [item['text'] for item in judgement['data']]
-    
     tokenizer = BatchTokenizer()
 
-    # Create labels for each of the sentences
-    all_texts = preamble_texts + judgement_texts
-    all_labels = [1] * len(preamble_texts) + [0] * len(judgement_texts)
+    if not eval_mode:
+        print("Loading training data")
+        # Load training data
+        preamble = pd.read_json("NER_TRAIN/NER_TRAIN_PREAMBLE.json")
+        preamble_texts = [item['text'] for item in preamble['data']]
+        judgement = pd.read_json("NER_TRAIN/NER_TRAIN_JUDGEMENT.json")
+        judgement_texts = [item['text'] for item in judgement['data']]
+
+        # Create labels for each of the sentences
+        all_texts = preamble_texts + judgement_texts
+        all_labels = [1] * len(preamble_texts) + [0] * len(judgement_texts)
     
-    
-    # Create batches
-    batch_size = 64
-    train_input_batches = [tokenizer(b) for b in chunk(all_texts, batch_size)]
-    train_label_batches = [encode_labels(b) for b in chunk(all_labels, batch_size)]
+        # Create batches
+        batch_size = 64
+        train_input_batches = [tokenizer(b) for b in chunk(all_texts, batch_size)]
+        train_label_batches = [encode_labels(b) for b in chunk(all_labels, batch_size)]
 
     # Process dev data as well
     print("Processing dev data")
@@ -119,18 +129,30 @@ def main():
     dev_sents_batches = [tokenizer(b) for b in chunk(all_texts_dev, batch_size)]
     dev_labels_batches = [encode_labels(b) for b in chunk(all_labels_dev, batch_size)]
 
-    model = SentenceBinaryClassifier(hidden_size=128).to(device)
-    training_loop(
-        num_epochs=10,
-        train_sentences=train_input_batches,
-        train_labels=train_label_batches,
-        dev_sentences=dev_sents_batches,
-        dev_labels=dev_labels_batches,
-        optimizer=torch.optim.Adam(model.parameters(), lr=0.001),
-        model=model
-    )
-    torch.save(model.state_dict(), "./sentence-classification-model.pth")
-        
+    if not eval_mode:
+        model = SentenceBinaryClassifier(hidden_size=128).to(device)
+        training_loop(
+            num_epochs=10,
+            train_sentences=train_input_batches,
+            train_labels=train_label_batches,
+            dev_sentences=dev_sents_batches,
+            dev_labels=dev_labels_batches,
+            optimizer=torch.optim.Adam(model.parameters(), lr=0.001),
+            model=model
+        )
+        torch.save(model.state_dict(), "./sentence-classification-model.pth")
+    else:
+        # Load the trained model and evaluate
+        trained_model = SentenceBinaryClassifier(hidden_size=128).to(device)
+        trained_model.load_state_dict(torch.load('./sentence-classification-model.pth'))
+        dev_batches = list(zip(dev_sents_batches, dev_labels_batches))
+        dev_preds = []
+        dev_labels = []
+        for sents, labels in tqdm(dev_batches):
+            pred = predict(trained_model, sents).squeeze(1)
+            dev_preds.extend(pred.cpu())
+            dev_labels.extend(list(labels.cpu().numpy()))
+        eval(dev_labels, dev_preds)
 
 if __name__ == "__main__":
     main()
