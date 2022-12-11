@@ -26,29 +26,11 @@ The goal of this project is to perform Named Entity Recognition (NER) on Indian 
     4. **Pretrain transformer for classification** - Pretrain first for classification, then decapitate and finetune for NER.
     5. **Add document type to FFN** - Append a node to the FFN at the head of the model that indicates the document type.
     6. **Train two models** - Train two separate models by dividing data using the classifier. At prediction time, use the classifier to choose a model to make predictions.
-  
-6. **Combined System** - As in [Jiang et al](#3), leverage the output of the spaCy and Stanford NER models.
 
-## Experimental Results
+## Training Models
+For the spaCy models, train with ```python3 -m spacy train config.cfg --output ./output --gpu-id 0```
 
-> For the spaCy models, train with `python3 -m spacy train config.cfg --output ./output --gpu-id 0`.
-> For the custom models, train with `python3 train_custom_model.py`.
-
-| Experimental Conditions | Trained on Machine # | F1 | Prec | Rec |
-| --- | --- | --- | --- | --- |
-| 1.i. Baseline | 1 | 0.903 | 0.903 | 0.904 |
-| 1.ii. LegalBERT as embeddings | 1 | 0.893 | 0.892 | 0.894 |
-| 1.iii. Higher Dropout (0.3) | 1 | 0.901 | 0.901 | 0.901 |
-| 1.iv. Larger Hidden State | 1 | 0.890 | 0.891 | 0.889 |
-
-| Model | F1 | Prec | Rec |
-| --- | --- | --- | --- |
-| Sentence Classifier | | | |
-
-
-### Machines
-1. Google Cloud Compute VM, n1-standard-4, 1 x NVIDIA T4, Debian
-
+For the custom models, train with ```python3 train_custom_model.py train``` and evaluate with ```python3 train_custom_model.py eval```, replacing `train_custom_model` with the appropriate training script.
 
 ## References
 <a id="1">[1]</a>  Ilias Chalkidis, Manos Fergadiotis, Prodromos Malakasiotis, Nikolaos Aletras, and Ion Androutsopoulos. 2020. LEGAL-BERT: The Muppets straight out of Law School. In Findings of the Association for Computational Linguistics: EMNLP 2020, pages 2898–2904, Online. Association for Computational Linguistics.
