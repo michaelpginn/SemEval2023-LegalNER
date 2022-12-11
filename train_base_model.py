@@ -111,7 +111,7 @@ def main():
 
     train, labels = load_data()
     dev, _ = load_data('training/data/dev.spacy')
-    tokenizer = AutoTokenizer.from_pretrained('roberta-base', add_prefix_space=True)
+    tokenizer = AutoTokenizer.from_pretrained('nlpaueb/legal-bert-base-uncased', add_prefix_space=True)
 
     train = process_dataset(train, tokenizer, labels)
     dev = dev.filter(lambda row: row['tags'][0] != '')
@@ -122,8 +122,8 @@ def main():
                                               tokenizer=tokenizer,
                                               batch_size=64,
                                               epochs=40,
-                                              run_name='roberta-baseline',
-                                              pretrained='./output' if eval_mode else 'roberta-base')
+                                              run_name='legalbert-base',
+                                              pretrained='./output' if eval_mode else 'nlpaueb/legal-bert-base-uncased')
 
 
     if not eval_mode:
