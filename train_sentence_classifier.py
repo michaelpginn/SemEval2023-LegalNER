@@ -102,6 +102,7 @@ def main():
         eval_mode = False
 
     tokenizer = BatchTokenizer()
+    batch_size = 64
 
     if not eval_mode:
         print("Loading training data")
@@ -116,7 +117,6 @@ def main():
         all_labels = [1] * len(preamble_texts) + [0] * len(judgement_texts)
     
         # Create batches
-        batch_size = 64
         train_input_batches = [tokenizer(b) for b in chunk(all_texts, batch_size)]
         train_label_batches = [encode_labels(b) for b in chunk(all_labels, batch_size)]
 
