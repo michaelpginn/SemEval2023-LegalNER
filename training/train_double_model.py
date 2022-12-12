@@ -1,7 +1,7 @@
 import spacy
 from spacy.tokens import DocBin
 from datasets import Dataset, load_metric
-from transformers import AutoTokenizer, AutoModel, TrainingArguments, Trainer, DataCollatorForTokenClassification
+from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
 from transformers.modeling_outputs import TokenClassifierOutput
 import numpy as np
 import wandb
@@ -11,7 +11,7 @@ import torch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def load_data(spacy_file='training/data/train.spacy'):
+def load_data(spacy_file='data/train.spacy'):
     print("Loading data...")
     doc_bin = DocBin().from_disk(spacy_file)
     nlp = spacy.load('en_core_web_trf')
@@ -102,46 +102,51 @@ def compute_metrics(pred, all_labels, verbose=False):
     }
 
 
-class RobertaWithAugmentedTokenClassificationHead(torch.nn.Module):
+class DoubleTokenClassifierModel(torch.nn.Module):
     def __init__(self, all_labels, pretrained):
         super().__init__()
-        self.encoder = AutoModel.from_pretrained(pretrained)
-        self.dropout = torch.nn.Dropout(0.1)
-
-        # Add one input for the doc type
-        self.num_labels = len(all_labels)
-        self.classifier = torch.nn.Linear(self.encoder.config.hidden_size + 1, self.num_labels)
+        self.preamble_model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
+        self.judgement_model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
 
     def forward(self, doc_class: torch.LongTensor, input_ids: torch.LongTensor = None, attention_mask = None, position_ids = None, labels = None):
-        outputs = self.encoder(input_ids, attention_mask=attention_mask, position_ids=position_ids)
+        row_mask = doc_class > 0
+        flipped_row_mask = ~row_mask
 
-        # Output is batch size * seq length * hidden size
-        # Right now doc_class is (batch size)
-        # We need to turn it into size (batch size * seq length * 1)
-        sequence_output = outputs[0]
-        sequence_output = self.dropout(sequence_output)
+        preamble_batch_input_ids = None if input_ids is None else input_ids[row_mask]
+        preamble_attention_mask = None if attention_mask is None else attention_mask[row_mask]
+        preamble_position_ids = None if position_ids is None else position_ids[row_mask]
+        preamble_labels = None if labels is None else labels[row_mask]
+        preamble_output = self.preamble_model(input_ids=preamble_batch_input_ids, attention_mask=preamble_attention_mask, position_ids=preamble_position_ids, labels=preamble_labels)
 
-        seq_length = sequence_output.shape[1]
-        doc_class_repeated = doc_class.unsqueeze(1).repeat(1, seq_length).unsqueeze(2)
+        judgement_batch_input_ids = None if input_ids is None else input_ids[flipped_row_mask]
+        judgement_attention_mask = None if attention_mask is None else attention_mask[flipped_row_mask]
+        judgement_position_ids = None if position_ids is None else position_ids[flipped_row_mask]
+        judgement_labels = None if labels is None else labels[flipped_row_mask]
+        judgement_output = self.judgement_model(input_ids=judgement_batch_input_ids,
+                                                attention_mask=judgement_attention_mask,
+                                                position_ids=judgement_position_ids, labels=judgement_labels)
 
-        logits = self.classifier(torch.cat((sequence_output, doc_class_repeated), dim=2))
+        loss = (preamble_output.loss or 0) + (judgement_output.loss or 0)
 
-        loss = None
-        if labels is not None:
-            loss_fct = torch.nn.CrossEntropyLoss()
-            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+        # Pick the right logits together
+        preamble_batch_index = 0
+        judgement_batch_index = 0
+        logits = []
+        for i in range(len(doc_class)):
+            if row_mask[i]:
+                logits.append(preamble_output.logits[preamble_batch_index])
+                preamble_batch_index += 1
+            else:
+                logits.append(judgement_output.logits[judgement_batch_index])
+                judgement_batch_index += 1
 
-        return TokenClassifierOutput(
-            loss=loss,
-            logits=logits,
-            hidden_states=outputs.hidden_states,
-            attentions=outputs.attentions
-        )
+        return TokenClassifierOutput(loss=loss, logits=torch.stack(logits).to(device))
+
 
 
 def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epochs, run_name, pretrained='nlpaueb/legal-bert-base-uncased'):
     print("Creating model...")
-    model = RobertaWithAugmentedTokenClassificationHead(all_labels, pretrained)
+    model = DoubleTokenClassifierModel(all_labels, pretrained)
     args = TrainingArguments(
         f"checkpoints",
         evaluation_strategy = "epoch",
@@ -183,7 +188,7 @@ def main():
     classifier_model.to(device)
 
     train, labels = load_data()
-    dev, _ = load_data('training/data/dev.spacy')
+    dev, _ = load_data('data/dev.spacy')
 
     tokenizer = AutoTokenizer.from_pretrained('roberta-base', add_prefix_space=True)
 

@@ -10,7 +10,7 @@ import torch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def load_data(spacy_file='training/data/train.spacy'):
+def load_data(spacy_file='data/train.spacy'):
     print("Loading data...")
     doc_bin = DocBin().from_disk(spacy_file)
     nlp = spacy.load('en_core_web_trf')
@@ -110,7 +110,7 @@ def main():
         wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
 
     train, labels = load_data()
-    dev, _ = load_data('training/data/dev.spacy')
+    dev, _ = load_data('data/dev.spacy')
     tokenizer = AutoTokenizer.from_pretrained('nlpaueb/legal-bert-base-uncased', add_prefix_space=True)
 
     train = process_dataset(train, tokenizer, labels)

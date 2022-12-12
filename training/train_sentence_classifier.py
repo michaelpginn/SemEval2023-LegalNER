@@ -107,9 +107,9 @@ def main():
     if not eval_mode:
         print("Loading training data")
         # Load training data
-        preamble = pd.read_json("NER_TRAIN/NER_TRAIN_PREAMBLE.json")
+        preamble = pd.read_json("../data/NER_TRAIN/NER_TRAIN_PREAMBLE.json")
         preamble_texts = [item['text'] for item in preamble['data']]
-        judgement = pd.read_json("NER_TRAIN/NER_TRAIN_JUDGEMENT.json")
+        judgement = pd.read_json("../data/NER_TRAIN/NER_TRAIN_JUDGEMENT.json")
         judgement_texts = [item['text'] for item in judgement['data']]
 
         # Create labels for each of the sentences
@@ -122,8 +122,8 @@ def main():
 
     # Process dev data as well
     print("Processing dev data")
-    preamble_texts_dev = [item['text'] for item in pd.read_json("NER_DEV/NER_DEV_PREAMBLE.json")['data']]
-    judgement_texts_dev = [item['text'] for item in pd.read_json("NER_DEV/NER_DEV_JUDGEMENT.json")['data']]
+    preamble_texts_dev = [item['text'] for item in pd.read_json("../data/NER_DEV/NER_DEV_PREAMBLE.json")['data']]
+    judgement_texts_dev = [item['text'] for item in pd.read_json("../data/NER_DEV/NER_DEV_JUDGEMENT.json")['data']]
     all_texts_dev = preamble_texts_dev + judgement_texts_dev
     all_labels_dev = [1] * len(preamble_texts_dev) + [0] * len(judgement_texts_dev)
     dev_sents_batches = [tokenizer(b) for b in chunk(all_texts_dev, batch_size)]

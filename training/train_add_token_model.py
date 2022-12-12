@@ -10,7 +10,7 @@ import torch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def load_data(spacy_file='training/data/train.spacy'):
+def load_data(spacy_file='data/train.spacy'):
     print("Loading data...")
     doc_bin = DocBin().from_disk(spacy_file)
     nlp = spacy.load('en_core_web_trf')
@@ -150,7 +150,7 @@ def main():
     classifier_model.to(device)
 
     train, labels = load_data()
-    dev, _ = load_data('training/data/dev.spacy')
+    dev, _ = load_data('data/dev.spacy')
     tokenizer = AutoTokenizer.from_pretrained('roberta-base', add_prefix_space=True)
 
     # For our custom tokens, let's add them
