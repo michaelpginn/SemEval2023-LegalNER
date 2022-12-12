@@ -28,7 +28,7 @@ The goal of this project is to perform Named Entity Recognition (NER) on Indian 
     6. **Train two models** - Train two separate models by dividing data using the classifier. At prediction time, use the classifier to choose a model to make predictions.
 
 ## Training Models
-For the spaCy models, train with ```python3 -m spacy train config.cfg --output ./output --gpu-id 0```
+For the spaCy models, train with ```python3 -m spacy train baseline.cfg --output ./output --gpu-id 0```
 
 For the custom models, train with ```python3 train_custom_model.py train``` and evaluate with ```python3 train_custom_model.py eval```, replacing `train_custom_model` with the appropriate training script.
 
