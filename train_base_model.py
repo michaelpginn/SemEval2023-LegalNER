@@ -92,7 +92,7 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
     trainer = Trainer(
         model,
         args,
-        train_dataset=None,
+        train_dataset=train,
         eval_dataset=dev,
         data_collator=data_collator,
         tokenizer=tokenizer,
@@ -113,10 +113,10 @@ def main():
     dev, _ = load_data('training/data/dev.spacy')
     tokenizer = AutoTokenizer.from_pretrained('nlpaueb/legal-bert-base-uncased', add_prefix_space=True)
 
-    # train = process_dataset(train, tokenizer, labels)
+    train = process_dataset(train, tokenizer, labels)
     dev = dev.filter(lambda row: row['tags'][0] != '')
     dev = process_dataset(dev, tokenizer, labels)
-    model, trainer = create_model_and_trainer(train=None,
+    model, trainer = create_model_and_trainer(train=train,
                                               dev=dev,
                                               all_labels=labels,
                                               tokenizer=tokenizer,
@@ -136,9 +136,7 @@ def main():
     # for key in all_metrics:
     #     print(key, ':\t', all_metrics[key])
 
-    preds = trainer.predict(Dataset.from_list([dev[82]]))['predictions']
-    print(preds)
-    print(np.argmax(preds, axis=2))
+    print(trainer.predict(Dataset.from_list([dev[82]])))
 
 if __name__ == "__main__":
     main()
