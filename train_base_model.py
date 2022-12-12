@@ -130,13 +130,11 @@ def main():
         trainer.train()
         trainer.save_model('./output')
 
-    # # Evaluate regardless
-    # predictions = trainer.predict(dev)
-    # all_metrics = compute_metrics(predictions, all_labels=labels, verbose=True)
-    # for key in all_metrics:
-    #     print(key, ':\t', all_metrics[key])
-
-    print(trainer.predict(Dataset.from_list([dev[82]])))
+    # Evaluate regardless
+    predictions = trainer.predict(dev)
+    all_metrics = compute_metrics(predictions, all_labels=labels, verbose=True)
+    for key in all_metrics:
+        print(key, ':\t', all_metrics[key])
 
 if __name__ == "__main__":
     main()
