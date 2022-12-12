@@ -136,7 +136,7 @@ def main():
     # for key in all_metrics:
     #     print(key, ':\t', all_metrics[key])
 
-    preds = trainer.predict(Dataset.from_list([dev[82]]))['predictions']
+    preds = trainer.predict(Dataset.from_list([dev[82]]))[0]
     print(preds)
     print(np.argmax(preds, axis=2))
 
