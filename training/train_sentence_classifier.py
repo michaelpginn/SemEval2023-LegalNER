@@ -113,13 +113,14 @@ def main():
         print("Loading training data")
         # Load training data
         preamble = pd.read_json("../data/NER_TRAIN/NER_TRAIN_PREAMBLE.json")['data']
-        if train_final:
-            preamble += pd.read_json("../data/NER_DEV/NER_DEV_PREAMBLE.json")['data']
         preamble_texts = [item['text'] for item in preamble]
         judgement = pd.read_json("../data/NER_TRAIN/NER_TRAIN_JUDGEMENT.json")['data']
-        if train_final:
-            judgement += pd.read_json("../data/NER_DEV/NER_DEV_JUDGEMENT.json")['data']
         judgement_texts = [item['text'] for item in judgement]
+
+        if train_final:
+            # Add the dev data in
+            preamble_texts += [item['text'] for item in pd.read_json("../data/NER_DEV/NER_DEV_PREAMBLE.json")['data']]
+            judgement_texts += [item['text'] for item in pd.read_json("../data/NER_DEV/NER_DEV_JUDGEMENT.json")['data']]
 
         # Create labels for each of the sentences
         all_texts = preamble_texts + judgement_texts
