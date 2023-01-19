@@ -125,6 +125,10 @@ def compute_metrics(pred, all_labels, verbose=False):
     }
 
 
+def output_test_preds(pred, all_labels):
+    predictions = pred[0]
+    predictions = np.argmax(predictions, axis=2)
+
 def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epochs, run_name, pretrained='nlpaueb/legal-bert-base-uncased'):
     print("Creating model...")
     model = AutoModelForTokenClassification.from_pretrained(pretrained, num_labels=len(all_labels))
