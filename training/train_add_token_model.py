@@ -190,7 +190,7 @@ def main():
                                               dev=dev,
                                               all_labels=labels,
                                               tokenizer=tokenizer,
-                                              batch_size=64,
+                                              batch_size=40,
                                               epochs=40,
                                               run_name='final_train',
                                               pretrained='./output' if eval_mode else 'roberta-base')
