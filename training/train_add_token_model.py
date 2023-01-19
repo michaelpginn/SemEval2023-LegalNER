@@ -89,7 +89,7 @@ def load_test_data(tokenizer):
         if is_preamble:
             text = '<PREAMBLE> ' + text
         else:
-            text = ' <JUDGEMENT>' + text
+            text = '<JUDGEMENT> ' + text
 
         return tokenizer(text, truncation=True, is_split_into_words=False)
     return test.map(tokenize, with_indices=True)
