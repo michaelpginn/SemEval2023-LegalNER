@@ -166,6 +166,7 @@ def main():
         eval_mode = False
         if sys.argv[1] == 'final':
             final_train = True
+            print("Training on combined train and dev data")
         wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
 
     classifier_model = train_sentence_classifier.SentenceBinaryClassifier(hidden_size=128)
