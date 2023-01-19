@@ -186,6 +186,7 @@ def main():
 
     if final_train:
         train = concatenate_datasets([train, dev])
+    print(len(train))
     model, trainer = create_model_and_trainer(train=train,
                                               dev=dev,
                                               all_labels=labels,
