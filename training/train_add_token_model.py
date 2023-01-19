@@ -1,12 +1,13 @@
 import spacy
 from spacy.tokens import DocBin
-from datasets import Dataset, load_metric
+from datasets import Dataset, load_metric, concatenate_datasets
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
 import numpy as np
 import wandb
 import sys
 import train_sentence_classifier
 import torch
+import pandas as pd
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -62,10 +63,10 @@ def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence
         # Add special token for document type
         is_preamble = class_preds[idx]
         if is_preamble:
-            row['tokens'].append('<PREAMBLE>')
+            row['tokens'].insert(0, '<PREAMBLE>')
         else:
-            row['tokens'].append('<JUDGEMENT>')
-        row['tags'].append('O')
+            row['tokens'].insert(0, '<JUDGEMENT>')
+        row['tags'].insert(0, 'O')
 
         tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
         aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
@@ -73,6 +74,25 @@ def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence
 
         return tokenized
     return dataset.map(tokenize, with_indices=True)
+
+
+def load_test_data(tokenizer):
+    all_rows = []
+    for index, row in pd.read_json("../data/NER_TEST_DATA_FS.json").iterrows():
+        all_rows.append({'text': row['data']['text'], 'meta': row['meta']['source']})
+
+    test = Dataset.from_list(all_rows)
+
+    def tokenize(row, idx):
+        text = row['text']
+        is_preamble = 'preamble' in row['meta']
+        if is_preamble:
+            text = '<PREAMBLE> ' + text
+        else:
+            text = ' <JUDGEMENT>' + text
+
+        return tokenizer(text, truncation=True, is_split_into_words=False)
+    return test.map(tokenize, with_indices=True)
 
 
 metric = load_metric("seqeval")
@@ -139,10 +159,13 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
 
 def main():
     # Switch to nlpaueb/legal-bert-base-uncased
+    final_train = False
     if sys.argv[1] == 'eval':
         eval_mode = True
     else:
         eval_mode = False
+        if sys.argv[1] == 'final':
+            final_train = True
         wandb.init(project="legalner-custom", entity="seminal-2023-legalner")
 
     classifier_model = train_sentence_classifier.SentenceBinaryClassifier(hidden_size=128)
@@ -159,13 +182,16 @@ def main():
     train = process_dataset(train, tokenizer, labels, classifier_model=classifier_model)
     dev = dev.filter(lambda row: row['tags'][0] != '')
     dev = process_dataset(dev, tokenizer, labels, classifier_model=classifier_model)
+
+    if final_train:
+        train = concatenate_datasets([train, dev])
     model, trainer = create_model_and_trainer(train=train,
                                               dev=dev,
                                               all_labels=labels,
                                               tokenizer=tokenizer,
                                               batch_size=64,
                                               epochs=40,
-                                              run_name='roberta-baseline',
+                                              run_name='final_train',
                                               pretrained='./output' if eval_mode else 'roberta-base')
 
 
