@@ -95,6 +95,7 @@ def load_test_data(tokenizer):
     return test.map(tokenize, with_indices=True)
 
 
+
 metric = load_metric("seqeval")
 
 
@@ -113,7 +114,7 @@ def compute_metrics(pred, all_labels, verbose=False):
         for prediction, label in zip(predictions, labels)
     ]
 
-    results = metric.compute(predictions=true_predictions, references=true_labels)
+    results = metric.compute(predictions=true_predictions, references=true_labels, mode='IOB2')
     if verbose:
         return results
     
