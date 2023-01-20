@@ -7,6 +7,7 @@ import wandb
 import sys
 import train_sentence_classifier
 import torch
+import evaluate
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -32,14 +33,28 @@ def process_dataset(dataset, tokenizer, labels):
     def tokenize(row, idx):
         # Add special token for document type
         tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
-        aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
+
+        aligned_labels = []
+        last_i = None
+        for i in tokenized.word_ids():
+            if i is None:
+                aligned_labels.append(-100)
+                continue
+
+            aligned_label = row['tags'][i]  # Find the appropriate label index
+            if not i == last_i:
+                aligned_labels.append(labels.index(aligned_label))
+            else:
+                aligned_labels.append(labels.index(aligned_label.replace('B-', 'I-')))
+            last_i = i
+
         tokenized['labels'] = aligned_labels
 
         return tokenized
     return dataset.map(tokenize, with_indices=True)
 
 
-metric = load_metric("seqeval")
+metric = evaluate.load("seqeval")
 
 
 def compute_metrics(pred, all_labels, verbose=False):
@@ -57,7 +72,7 @@ def compute_metrics(pred, all_labels, verbose=False):
         for prediction, label in zip(predictions, labels)
     ]
 
-    results = metric.compute(predictions=true_predictions, references=true_labels)
+    results = metric.compute(predictions=true_predictions, references=true_labels, scheme='IOB2', mode='strict')
     if verbose:
         return results
     
