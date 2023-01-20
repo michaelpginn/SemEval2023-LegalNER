@@ -135,7 +135,7 @@ def main():
                                               dev=dev,
                                               all_labels=labels,
                                               tokenizer=tokenizer,
-                                              batch_size=64,
+                                              batch_size=40,
                                               epochs=40,
                                               run_name='legalbert-base',
                                               pretrained='./output' if eval_mode else 'nlpaueb/legal-bert-base-uncased')
