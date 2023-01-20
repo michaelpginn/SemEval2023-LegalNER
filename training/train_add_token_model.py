@@ -70,7 +70,22 @@ def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence
         row['tags'].insert(0, 'O')
 
         tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
-        aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
+
+        # Assign the appropriate label ids by determining the original label for the word that each token belongs to
+        aligned_labels = []
+        last_i = None
+        for i in tokenized.word_ids():
+            if i is None:
+                aligned_labels.append(-100)
+                continue
+
+            aligned_label = row['tags'][i]  # Find the appropriate label index
+            if not i == last_i:
+                aligned_labels.append(labels.index(aligned_label))
+            else:
+                aligned_labels.append(labels.index(aligned_label.replace('B', 'I')))
+            last_i = i
+
         tokenized['labels'] = aligned_labels
 
         return tokenized
