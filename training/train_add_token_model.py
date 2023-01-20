@@ -83,7 +83,7 @@ def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence
             if not i == last_i:
                 aligned_labels.append(labels.index(aligned_label))
             else:
-                aligned_labels.append(labels.index(aligned_label.replace('B', 'I')))
+                aligned_labels.append(labels.index(aligned_label.replace('B-', 'I-')))
             last_i = i
 
         tokenized['labels'] = aligned_labels
