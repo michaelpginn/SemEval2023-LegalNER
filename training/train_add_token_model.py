@@ -1,6 +1,7 @@
 import spacy
 from spacy.tokens import DocBin
-from datasets import Dataset, load_metric, concatenate_datasets
+from datasets import Dataset, concatenate_datasets
+import evaluate
 from transformers import AutoTokenizer, AutoModelForTokenClassification, TrainingArguments, Trainer, DataCollatorForTokenClassification
 import numpy as np
 import wandb
@@ -96,7 +97,7 @@ def load_test_data(tokenizer):
 
 
 
-metric = load_metric("seqeval")
+metric = evaluate.load("seqeval")
 
 
 def compute_metrics(pred, all_labels, verbose=False):
@@ -114,7 +115,7 @@ def compute_metrics(pred, all_labels, verbose=False):
         for prediction, label in zip(predictions, labels)
     ]
 
-    results = metric.compute(predictions=true_predictions, references=true_labels, mode='IOB2')
+    results = metric.compute(predictions=true_predictions, references=true_labels, scheme='IOB2', mode='strict')
     if verbose:
         return results
     
