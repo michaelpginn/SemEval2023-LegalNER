@@ -167,7 +167,7 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
         learning_rate=2e-5,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        gradient_accumulation_steps=6,
+        gradient_accumulation_steps=3,
         num_train_epochs=epochs,
         weight_decay=0.01,
         save_strategy="epoch",
