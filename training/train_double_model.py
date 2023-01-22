@@ -104,7 +104,7 @@ def compute_metrics(pred, all_labels, verbose=False):
         for prediction, label in zip(predictions, labels)
     ]
 
-    results = metric.compute(predictions=true_predictions, references=true_labels)
+    results = metric.compute(predictions=true_predictions, references=true_labels, scheme='IOB2', mode='strict')
     if verbose:
         return results
     
@@ -167,7 +167,7 @@ def create_model_and_trainer(train, dev, all_labels, tokenizer, batch_size, epoc
         learning_rate=2e-5,
         per_device_train_batch_size=batch_size,
         per_device_eval_batch_size=batch_size,
-        gradient_accumulation_steps=3,
+        gradient_accumulation_steps=4,
         num_train_epochs=epochs,
         weight_decay=0.01,
         save_strategy="epoch",
@@ -214,7 +214,7 @@ def main():
                                               dev=dev,
                                               all_labels=labels,
                                               tokenizer=tokenizer,
-                                              batch_size=40,
+                                              batch_size=30,
                                               epochs=40,
                                               run_name='roberta-baseline',
                                               pretrained='./output' if eval_mode else 'roberta-base')

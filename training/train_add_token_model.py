@@ -130,7 +130,7 @@ def compute_metrics(pred, all_labels, verbose=False):
         for prediction, label in zip(predictions, labels)
     ]
 
-    results = metric.compute(predictions=true_predictions, references=true_labels, scheme='IOB2', mode='strict')
+    results = metric.compute(predictions=true_predictions, references=true_labels)
     if verbose:
         return results
     
