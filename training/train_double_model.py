@@ -8,6 +8,7 @@ import wandb
 import sys
 import train_sentence_classifier
 import torch
+import evaluate
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -62,7 +63,20 @@ def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence
 
     def tokenize(row, idx):
         tokenized = tokenizer(row['tokens'], truncation=True, is_split_into_words=True)
-        aligned_labels = [-100 if i is None else labels.index(row['tags'][i]) for i in tokenized.word_ids()]
+
+        aligned_labels = []
+        last_i = None
+        for i in tokenized.word_ids():
+            if i is None:
+                aligned_labels.append(-100)
+                continue
+
+            aligned_label = row['tags'][i]  # Find the appropriate label index
+            if not i == last_i:
+                aligned_labels.append(labels.index(aligned_label))
+            else:
+                aligned_labels.append(labels.index(aligned_label.replace('B-', 'I-')))
+            last_i = i
         tokenized['labels'] = aligned_labels
 
         """Store the class for the row"""
@@ -72,7 +86,7 @@ def process_dataset(dataset, tokenizer, labels, classifier_model: train_sentence
     return dataset.map(tokenize, with_indices=True)
 
 
-metric = load_metric("seqeval")
+metric = evaluate.load("seqeval")
 
 
 def compute_metrics(pred, all_labels, verbose=False):
@@ -200,7 +214,7 @@ def main():
                                               dev=dev,
                                               all_labels=labels,
                                               tokenizer=tokenizer,
-                                              batch_size=32,
+                                              batch_size=40,
                                               epochs=40,
                                               run_name='roberta-baseline',
                                               pretrained='./output' if eval_mode else 'roberta-base')
